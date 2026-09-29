@@ -128,6 +128,37 @@ export default async function ProjectPage({ params }) {
       </header>
 
       <div className="mt-8 space-y-6">
+        {!isEmpty(project.results) && (
+          <section>
+            <h2 className="mb-3 flex items-baseline gap-2">
+              <span className="text-xs font-semibold tracking-widest">
+                RESULTS
+              </span>
+              <span className="text-xs text-muted">효과</span>
+            </h2>
+            <ul className="flex flex-wrap gap-4">
+              {project.results.map((result, i) => (
+                <li
+                  key={i}
+                  className="min-w-48 flex-1 rounded-xl border border-line bg-card p-6"
+                >
+                  <p className="text-xs text-muted">
+                    <Value value={result.label} />
+                  </p>
+                  <p className="mt-2 text-2xl font-bold leading-snug text-accent">
+                    <Value value={result.after} />
+                  </p>
+                  {!isEmpty(result.before) && (
+                    <p className="mt-2 text-xs text-muted">
+                      이전: <Value value={result.before} />
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {hasLinks && (
           <Section title="링크">
             <dl>
@@ -223,34 +254,6 @@ export default async function ProjectPage({ params }) {
                 </li>
               ))}
             </ol>
-          </Section>
-        )}
-
-        {!isEmpty(project.results) && (
-          <Section title="효과">
-            <ul className="divide-y divide-line">
-              {project.results.map((result, i) => (
-                <li
-                  key={i}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 text-sm first:pt-0 last:pb-0"
-                >
-                  <span className="w-28 shrink-0 text-muted">
-                    <Value value={result.label} />
-                  </span>
-                  {!isEmpty(result.before) && (
-                    <>
-                      <span className="text-muted line-through decoration-muted/50">
-                        <Value value={result.before} />
-                      </span>
-                      <span className="text-muted">→</span>
-                    </>
-                  )}
-                  <span className="font-semibold text-accent">
-                    <Value value={result.after} />
-                  </span>
-                </li>
-              ))}
-            </ul>
           </Section>
         )}
 

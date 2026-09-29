@@ -1,5 +1,6 @@
 {
   "id": "jarvis",
+  "order": 6,
   "name": "자비스",
   "group": "개인 AI 비서",
   "summary": "음성 호출·웹 검색·일정·채용 검색을 갖춘 개인 AI 비서 (웹·에이전트·호출어·JOB MODE)",

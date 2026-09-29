@@ -1,5 +1,6 @@
 {
   "id": "inventory-dashboard",
+  "order": 1,
   "name": "재고 대시보드",
   "group": "업무 자동화",
   "summary": "이카운트 ERP API와 연동한 사내 재고 조회·BOM 관리·메모 게시판",

@@ -1,5 +1,6 @@
 {
   "id": "qc-report-system",
+  "order": 4,
   "name": "검사 보고·승인 시스템",
   "group": "업무 자동화",
   "summary": "검사 결과를 올리고 품질책임자가 승인하는 결재 웹 시스템",

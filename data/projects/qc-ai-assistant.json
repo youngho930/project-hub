@@ -1,5 +1,6 @@
 {
   "id": "qc-ai-assistant",
+  "order": 3,
   "name": "QC AI 챗봇",
   "group": "업무 자동화",
   "summary": "QC 문서 Q&A와 재고 조회를 합친 AI 챗봇",
