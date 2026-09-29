@@ -363,8 +363,9 @@ export default function GraphView({ graph, focus }) {
               onNodeClick={(node) => setSelectedId(node.id)}
               onBackgroundClick={() => setSelectedId(null)}
               onEngineStop={() => setEngineDone(true)}
-              warmupTicks={40}
-              cooldownTicks={300}
+              // 배치는 첫 화면 전에 미리 계산하고, 화면에서는 거의 움직이지 않게
+              warmupTicks={300}
+              cooldownTicks={15}
               autoPauseRedraw={false}
             />
           )}

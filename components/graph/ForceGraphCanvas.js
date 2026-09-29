@@ -1,7 +1,7 @@
 "use client";
 
 import { forceCollide } from "d3-force-3d";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import {
   LABEL_FONT,
@@ -43,17 +43,28 @@ function makeCollideRadius() {
   };
 }
 
+const EMPTY = { nodes: [], links: [] };
+
 // next/dynamic(ssr: false)로 불러오는 캔버스. ref는 fgRef prop으로 받아 그대로 연결
-export default function ForceGraphCanvas({ fgRef, ...props }) {
+export default function ForceGraphCanvas({ fgRef, graphData, ...props }) {
+  const [forcesReady, setForcesReady] = useState(false);
+
+  // warmupTicks는 graphData를 넘기는 순간 바로 계산되므로,
+  // 빈 데이터로 먼저 그린 뒤 힘을 설정하고 나서 실제 데이터를 넘김
   useEffect(() => {
     const fg = fgRef.current;
     if (!fg) return;
     fg.d3Force("charge")?.strength(-260).distanceMax(420);
     fg.d3Force("link")?.distance(linkDistance);
     fg.d3Force("collide", forceCollide(makeCollideRadius()).strength(0.9));
-    // 첫 렌더 때 기본 힘으로 시작된 배치를 새 힘으로 다시 계산
-    fg.d3ReheatSimulation();
+    setForcesReady(true);
   }, [fgRef]);
 
-  return <ForceGraph2D ref={fgRef} {...props} />;
+  return (
+    <ForceGraph2D
+      ref={fgRef}
+      graphData={forcesReady ? graphData : EMPTY}
+      {...props}
+    />
+  );
 }
