@@ -116,7 +116,7 @@ export default async function ProjectPage({ params }) {
     .filter(Boolean);
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-[1400px]">
       <header className="flex items-start justify-between gap-6">
         <div>
           <p className="label">
@@ -159,6 +159,11 @@ export default async function ProjectPage({ params }) {
                   {!isEmpty(result.before) && (
                     <p className="mt-2 text-xs text-muted">
                       이전: <Value value={result.before} />
+                    </p>
+                  )}
+                  {!isEmpty(result.note) && (
+                    <p className="mt-1.5 text-xs text-muted">
+                      <Value value={result.note} />
                     </p>
                   )}
                 </li>

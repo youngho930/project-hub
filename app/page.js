@@ -11,7 +11,7 @@ import {
   Sun,
   Users,
 } from "lucide-react";
-import { getCompletion, getMissed } from "@/lib/projects";
+import { CHECKLIST_SIZE, getCompletion, getMissed } from "@/lib/projects";
 
 const RANGES = ["오늘", "7일", "30일"];
 
@@ -111,10 +111,9 @@ function sum(items) {
 export default function Home() {
   const completion = getCompletion();
   const missed = getMissed();
-  const missedTotal = sum(missed);
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-[1400px]">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="label">Overview</p>
@@ -138,7 +137,9 @@ export default function Home() {
       <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="card">
           <h2 className="label">Completion</h2>
-          <p className="mt-1 text-xs text-muted">포트폴리오 문서 완성도</p>
+          <p className="mt-1 text-xs text-muted">
+            포트폴리오 완성도 (프로젝트당 {CHECKLIST_SIZE}개 항목)
+          </p>
           <div className="mt-5 flex items-center gap-8">
             <Donut percent={completion.percent} />
             <dl className="space-y-3">
@@ -182,10 +183,10 @@ export default function Home() {
           <h2 className="flex items-center gap-2">
             <span className="label">Missed</span>
             <AlertTriangle size={15} className="text-red" />
-            <span className="text-xl font-bold text-red">{missedTotal}</span>
+            <span className="text-xl font-bold text-red">{completion.left}</span>
           </h2>
           <p className="mt-1 text-xs text-muted">
-            &quot;확인 필요&quot; 값이 남은 프로젝트
+            포트폴리오에 채워야 할 항목
           </p>
           {missed.length === 0 ? (
             <p className="mt-6 text-sm text-muted">모두 채워졌습니다</p>
@@ -197,9 +198,14 @@ export default function Home() {
                     href={`/projects/${item.id}`}
                     className="inset flex items-center gap-3 border-l-2 border-l-red/70 px-4 py-2.5 text-sm transition-colors hover:border-line hover:border-l-red hover:bg-line/40"
                   >
-                    <span className="truncate">{item.name}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate">{item.name}</span>
+                      <span className="mt-0.5 block text-xs text-muted">
+                        {item.missing.join(", ")}
+                      </span>
+                    </span>
                     <span className="ml-auto shrink-0 rounded-md border border-red/40 bg-red/10 px-2 py-0.5 text-xs font-semibold text-red">
-                      확인 필요 {item.count}개
+                      {item.missing.length}개 부족
                     </span>
                     <ChevronRight size={14} className="shrink-0 text-muted" />
                   </Link>
