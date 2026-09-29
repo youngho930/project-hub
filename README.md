@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Project Hub
 
-## Getting Started
+흩어져 있던 개인 프로젝트의 진행 상황과 설계 결정을 한곳에서 관리하는 대시보드 + 지식 그래프
 
-First, run the development server:
+## 만든 이유
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+프로젝트마다 저장소·배포 플랫폼·계정이 흩어져 있어서, 전체 현황을 파악하고 "왜 이렇게 만들었는지"를 정리하기가 어려웠습니다. 프로젝트 정보를 한 형식으로 모아 두고, 빠진 내용과 프로젝트 사이의 연결을 한눈에 보려고 만들었습니다.
+
+## 주요 화면
+
+- **개요** (`/`): 포트폴리오 완성도(프로젝트당 5개 항목 체크)와 아직 채워야 할 항목을 모아 보여줍니다.
+- **프로젝트 상세** (`/projects/[id]`): 효과(전 → 후), 저장소·배포 링크, 기술, 구성, 해결한 문제, 설계 결정(무엇을 / 왜 / 포기한 대안)을 보여줍니다. "확인 필요"로 남은 값은 노란 배지로 표시됩니다.
+- **지식 그래프** (`/graph`): 프로젝트·기술·구성·결정·효과를 노드로 연결해 보여줍니다. 노드를 누르면 자세한 내용이 나오고, `/graph?focus=<id>`로 한 프로젝트 주변만 볼 수 있습니다.
+
+(스크린샷 추가 예정)
+
+## 구조
+
+프로젝트 정보는 `data/projects/*.json` 파일 하나에 프로젝트 하나씩 관리합니다. 개요의 완성도와 지식 그래프는 따로 입력하지 않고, 이 JSON 파일에서 자동으로 계산합니다.
+
+```
+app/              화면 (개요, 프로젝트 상세, 지식 그래프)
+components/       사이드바, 상단 바, 그래프 등 화면 구성 요소
+lib/projects.js   JSON 읽기, 완성도 계산
+lib/graph.js      JSON으로 그래프 노드·링크 만들기
+data/projects/    프로젝트 데이터
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 기술 스택
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- Next.js
+- React
+- Tailwind CSS
+- react-force-graph-2d
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 로컬 실행
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+브라우저에서 http://localhost:3000 을 엽니다.
