@@ -1,0 +1,88 @@
+{
+  "id": "jarvis",
+  "name": "자비스",
+  "group": "개인 AI 비서",
+  "summary": "음성 호출·웹 검색·일정·채용 검색을 갖춘 개인 AI 비서 (웹·에이전트·호출어·JOB MODE)",
+  "repo": "youngho930/jarvis-vercel",
+  "parts": [
+    {
+      "name": "웹",
+      "repo": "youngho930/jarvis-vercel",
+      "tech": [
+        "Vercel",
+        "Groq",
+        "Upstash Redis",
+        "Google OAuth",
+        "Google Calendar API",
+        "Tavily",
+        "Gemini API"
+      ]
+    },
+    {
+      "name": "에이전트",
+      "repo": "youngho930/jarvis-agent",
+      "tech": [
+        "Python"
+      ]
+    },
+    {
+      "name": "호출어",
+      "repo": "youngho930/jarvis-wake",
+      "tech": [
+        "Python",
+        "Vosk"
+      ]
+    },
+    {
+      "name": "JOB MODE",
+      "repo": "youngho930/job-jarvis",
+      "tech": [
+        "확인 필요"
+      ]
+    }
+  ],
+  "deploy": {
+    "platform": "Vercel",
+    "url": "https://jarvis-vercel-gray.vercel.app"
+  },
+  "tech": [
+    "Python",
+    "Gemini API",
+    "Vercel",
+    "Groq",
+    "Upstash Redis",
+    "Vosk",
+    "Tavily"
+  ],
+  "problem": "확인 필요",
+  "decisions": [
+    {
+      "what": "정해진 판단은 코드가, 애매한 것만 모델이 담당",
+      "why": "확인 필요",
+      "rejected": ""
+    },
+    {
+      "what": "사람인 검색을 실제 브라우저를 돌아다니는 에이전트 방식으로",
+      "why": "고용24 공채속보는 257건뿐이라 AI·자동화·ERP 직무가 거의 없음",
+      "rejected": "고용24 공채속보 API"
+    },
+    {
+      "what": "웹 검색 기능 추가",
+      "why": "기능이 제한적이고 느리다는 피드백을 받음",
+      "rejected": ""
+    },
+    {
+      "what": "JOB MODE로 개인 질문과 채용 질문을 구분",
+      "why": "하나의 비서 안에서 일상 대화와 구직 업무가 섞이지 않게 하려고",
+      "rejected": "취업 비서를 별도 프로그램으로 분리"
+    }
+  ],
+  "results": [
+    {
+      "label": "규모",
+      "before": "",
+      "after": "도구 22개"
+    }
+  ],
+  "related": []
+}

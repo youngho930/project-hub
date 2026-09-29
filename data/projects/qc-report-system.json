@@ -1,0 +1,27 @@
+{
+  "id": "qc-report-system",
+  "name": "검사 보고·승인 시스템",
+  "group": "업무 자동화",
+  "summary": "검사 결과를 올리고 품질책임자가 승인하는 결재 웹 시스템",
+  "repo": "youngho930/qc-report-system",
+  "deploy": {
+    "platform": "확인 필요",
+    "url": ""
+  },
+  "tech": [
+    "Python",
+    "Django"
+  ],
+  "problem": "전 직장에서 검사 결과를 Jira에 수량·불량 사유로 올리고 검토받던 흐름을 전용 시스템으로",
+  "decisions": [
+    {
+      "what": "Django로 제작",
+      "why": "확인 필요",
+      "rejected": ""
+    }
+  ],
+  "results": [],
+  "related": [
+    "jira-weekly-report"
+  ]
+}

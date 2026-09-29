@@ -1,0 +1,27 @@
+{
+  "id": "jira-weekly-report",
+  "name": "Jira 주간보고 자동화",
+  "group": "업무 자동화",
+  "summary": "Jira 이슈를 REST API로 읽어 주간 업무 보고를 자동 생성",
+  "repo": "확인 필요",
+  "deploy": {
+    "platform": "",
+    "url": ""
+  },
+  "tech": [
+    "Python",
+    "Jira REST API"
+  ],
+  "problem": "전 직장에서 주간보고를 Jira에 수기로 작성함",
+  "decisions": [
+    {
+      "what": "개인 Jira Cloud 무료 사이트에 가상 이슈로 진행",
+      "why": "전 직장 Jira에 접근할 수 없음",
+      "rejected": ""
+    }
+  ],
+  "results": [],
+  "related": [
+    "qc-report-system"
+  ]
+}

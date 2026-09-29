@@ -1,0 +1,49 @@
+{
+  "id": "inventory-dashboard",
+  "name": "재고 대시보드",
+  "group": "업무 자동화",
+  "summary": "이카운트 ERP API와 연동한 사내 재고 조회·BOM 관리·메모 게시판",
+  "repo": "youngho930/inventory-dashboard",
+  "deploy": {
+    "platform": "PythonAnywhere",
+    "url": "https://shinyoungho.pythonanywhere.com"
+  },
+  "tech": [
+    "Python",
+    "이카운트 ERP API",
+    "ngrok"
+  ],
+  "problem": "재고를 확인할 때마다 ERP에 들어가 찾느라 시간이 걸림",
+  "decisions": [
+    {
+      "what": "기획·개발·배포·운영을 혼자 진행",
+      "why": "확인 필요",
+      "rejected": ""
+    },
+    {
+      "what": "공개용으로 정리해 데모 배포",
+      "why": "포트폴리오 대표작으로 활용",
+      "rejected": ""
+    }
+  ],
+  "results": [
+    {
+      "label": "재고 확인 시간",
+      "before": "건당 1~2분",
+      "after": "30초"
+    },
+    {
+      "label": "사용 규모",
+      "before": "",
+      "after": "사내 7명, 하루 7~10건"
+    },
+    {
+      "label": "지속성",
+      "before": "",
+      "after": "퇴사 후 6개월간 유지보수 없이 사용 중"
+    }
+  ],
+  "related": [
+    "qc-ai-assistant"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "qc-ai-assistant",
+  "name": "QC AI 챗봇",
+  "group": "업무 자동화",
+  "summary": "QC 문서 Q&A와 재고 조회를 합친 AI 챗봇",
+  "repo": "youngho930/qc-ai-assistant",
+  "deploy": {
+    "platform": "Streamlit",
+    "url": "https://qc-ai-assistant.streamlit.app"
+  },
+  "tech": [
+    "Python",
+    "Streamlit",
+    "Gemini API"
+  ],
+  "problem": "확인 필요",
+  "decisions": [
+    {
+      "what": "무료 도구만으로 제작",
+      "why": "확인 필요",
+      "rejected": ""
+    }
+  ],
+  "results": [],
+  "related": [
+    "inventory-dashboard",
+    "excel-merger"
+  ]
+}

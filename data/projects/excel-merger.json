@@ -1,0 +1,39 @@
+{
+  "id": "excel-merger",
+  "name": "엑셀 취합·검증기",
+  "group": "업무 자동화",
+  "summary": "여러 엑셀 파일을 자동으로 합치고 오류를 검증하는 도구",
+  "repo": "youngho930/excel-merger",
+  "deploy": {
+    "platform": "Streamlit",
+    "url": "https://excel-merger-youngho.streamlit.app"
+  },
+  "tech": [
+    "Python",
+    "Streamlit",
+    "Gemini API"
+  ],
+  "problem": "여러 파일을 수작업으로 취합하면 시간이 오래 걸리고 오류를 놓침",
+  "decisions": [
+    {
+      "what": "품질관리 전용이 아닌 범용 도구로 제작",
+      "why": "어느 업무에서든 쓸 수 있는 자동화 도구를 원함",
+      "rejected": "SPC 분석·성적서 발행·AQL 도구 (보류)"
+    }
+  ],
+  "results": [
+    {
+      "label": "처리 시간",
+      "before": "11분 42초",
+      "after": "1분 27초"
+    },
+    {
+      "label": "오류 발견",
+      "before": "14건 중 8건",
+      "after": "14건 전부"
+    }
+  ],
+  "related": [
+    "qc-ai-assistant"
+  ]
+}
