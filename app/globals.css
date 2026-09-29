@@ -1,12 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #0f1117;
-  --color-card: #161a23;
-  --color-line: #242a36;
+  --color-bg: #0b0e14;
+  --color-card: #131823;
+  --color-inset: #0f131b;
+  --color-line: #1f2533;
   --color-text: #e5e7eb;
-  --color-muted: #9ca3af;
+  --color-muted: #8b93a3;
   --color-accent: #f59e0b;
+  --color-orange: #f59e0b;
+  --color-red: #ef4444;
+  --color-green: #22c55e;
+  --color-blue: #3b82f6;
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, system-ui, "Segoe UI", "Malgun Gothic",
     "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
@@ -21,4 +26,29 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   word-break: keep-all;
+}
+
+@layer components {
+  /* 섹션 라벨: 작은 대문자 영문 + 넓은 글자 간격 */
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .card {
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    background: var(--color-card);
+    padding: 24px;
+  }
+
+  /* 카드 안의 한 단계 어두운 칸 */
+  .inset {
+    border: 1px solid var(--color-line);
+    border-radius: 10px;
+    background: var(--color-inset);
+  }
 }

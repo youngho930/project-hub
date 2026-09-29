@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAllProjects, getProject } from "@/lib/projects";
-
-const NEEDS_CHECK = "확인 필요";
+import { ArrowUpRight, Network } from "lucide-react";
+import { NEEDS_CHECK, getAllProjects, getProject } from "@/lib/projects";
 
 const isEmpty = (value) =>
   value === undefined ||
@@ -34,11 +33,21 @@ function Value({ value, children }) {
   return children ?? value;
 }
 
-function Section({ title, children }) {
+// 라벨: 작은 대문자 영문 + 옆에 회색 한글
+function SectionLabel({ en, ko }) {
   return (
-    <section className="rounded-xl border border-line bg-card p-6">
-      <h2 className="mb-4 text-sm font-semibold text-muted">{title}</h2>
-      {children}
+    <h2 className="flex items-baseline gap-2">
+      <span className="label">{en}</span>
+      <span className="text-xs text-muted/70">{ko}</span>
+    </h2>
+  );
+}
+
+function Section({ en, ko, children }) {
+  return (
+    <section className="card">
+      <SectionLabel en={en} ko={ko} />
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
@@ -51,7 +60,7 @@ function Tags({ items }) {
           {item === NEEDS_CHECK ? (
             <CheckBadge />
           ) : (
-            <span className="inline-block rounded-full border border-line bg-bg px-3 py-1 text-xs">
+            <span className="inline-block rounded-full border border-line bg-inset px-3 py-1 text-xs">
               {item}
             </span>
           )}
@@ -67,9 +76,10 @@ function ExternalLink({ href, children }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="break-all text-accent hover:underline"
+      className="inline-flex items-center gap-1 break-all text-accent hover:underline"
     >
       {children}
+      <ArrowUpRight size={14} className="shrink-0" />
     </a>
   );
 }
@@ -84,8 +94,8 @@ function RepoLink({ repo }) {
 
 function Row({ label, children }) {
   return (
-    <div className="flex gap-4 py-1.5 text-sm">
-      <dt className="w-20 shrink-0 text-muted">{label}</dt>
+    <div className="flex items-baseline gap-4 py-1.5 text-sm">
+      <dt className="label w-24 shrink-0">{label}</dt>
       <dd className="min-w-0">{children}</dd>
     </div>
   );
@@ -106,11 +116,16 @@ export default async function ProjectPage({ params }) {
     .filter(Boolean);
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-5xl">
       <header className="flex items-start justify-between gap-6">
         <div>
-          <p className="text-xs font-semibold text-accent">{project.group}</p>
-          <h1 className="mt-1 text-2xl font-bold">{project.name}</h1>
+          <p className="label">
+            Project <span className="mx-1 text-line">/</span>
+            <span className="tracking-normal text-accent">{project.group}</span>
+          </p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+            {project.name}
+          </h1>
           {!isEmpty(project.summary) && (
             <p className="mt-2 text-muted">
               <Value value={project.summary} />
@@ -121,27 +136,20 @@ export default async function ProjectPage({ params }) {
           type="button"
           disabled
           title="다음 단계에서 제공"
-          className="shrink-0 cursor-not-allowed rounded-lg border border-line px-4 py-2 text-sm text-muted opacity-60"
+          className="flex shrink-0 cursor-not-allowed items-center gap-2 rounded-lg border border-line bg-card px-4 py-2 text-sm text-muted opacity-60"
         >
+          <Network size={15} />
           그래프 보기 (다음 단계)
         </button>
       </header>
 
-      <div className="mt-8 space-y-6">
+      <div className="mt-8 space-y-4">
         {!isEmpty(project.results) && (
           <section>
-            <h2 className="mb-3 flex items-baseline gap-2">
-              <span className="text-xs font-semibold tracking-widest">
-                RESULTS
-              </span>
-              <span className="text-xs text-muted">효과</span>
-            </h2>
-            <ul className="flex flex-wrap gap-4">
+            <SectionLabel en="Results" ko="효과" />
+            <ul className="mt-3 flex flex-wrap gap-4">
               {project.results.map((result, i) => (
-                <li
-                  key={i}
-                  className="min-w-48 flex-1 rounded-xl border border-line bg-card p-6"
-                >
+                <li key={i} className="card min-w-48 flex-1">
                   <p className="text-xs text-muted">
                     <Value value={result.label} />
                   </p>
@@ -160,15 +168,15 @@ export default async function ProjectPage({ params }) {
         )}
 
         {hasLinks && (
-          <Section title="링크">
+          <Section en="Links" ko="링크">
             <dl>
               {!isEmpty(project.repo) && (
-                <Row label="저장소">
+                <Row label="Repo">
                   <RepoLink repo={project.repo} />
                 </Row>
               )}
               {hasDeploy && (
-                <Row label="배포">
+                <Row label="Deploy">
                   <span className="flex flex-wrap items-center gap-2">
                     {!isEmpty(deploy.platform) && (
                       <Value value={deploy.platform} />
@@ -186,19 +194,16 @@ export default async function ProjectPage({ params }) {
         )}
 
         {!isEmpty(project.tech) && (
-          <Section title="기술">
+          <Section en="Stack" ko="기술">
             <Tags items={project.tech} />
           </Section>
         )}
 
         {!isEmpty(project.parts) && (
-          <Section title="구성">
-            <div className="grid gap-4 sm:grid-cols-2">
+          <Section en="Parts" ko="구성">
+            <div className="grid gap-3 sm:grid-cols-2">
               {project.parts.map((part) => (
-                <div
-                  key={part.name}
-                  className="rounded-xl border border-line bg-bg p-5"
-                >
+                <div key={part.name} className="inset p-5">
                   <h3 className="font-semibold">{part.name}</h3>
                   {!isEmpty(part.repo) && (
                     <p className="mt-1 text-sm">
@@ -217,7 +222,7 @@ export default async function ProjectPage({ params }) {
         )}
 
         {!isEmpty(project.problem) && (
-          <Section title="해결한 문제">
+          <Section en="Problem" ko="해결한 문제">
             <p className="leading-relaxed">
               <Value value={project.problem} />
             </p>
@@ -225,28 +230,25 @@ export default async function ProjectPage({ params }) {
         )}
 
         {!isEmpty(project.decisions) && (
-          <Section title="결정">
-            <ol className="space-y-4">
+          <Section en="Decisions" ko="결정">
+            <ol className="space-y-3">
               {project.decisions.map((decision, i) => (
-                <li
-                  key={i}
-                  className="rounded-xl border border-line bg-bg p-5"
-                >
+                <li key={i} className="inset p-5">
                   <dl>
                     {!isEmpty(decision.what) && (
-                      <Row label="무엇을">
+                      <Row label="What">
                         <span className="font-semibold">
                           <Value value={decision.what} />
                         </span>
                       </Row>
                     )}
                     {!isEmpty(decision.why) && (
-                      <Row label="왜">
+                      <Row label="Why">
                         <Value value={decision.why} />
                       </Row>
                     )}
                     {!isEmpty(decision.rejected) && (
-                      <Row label="포기한 대안">
+                      <Row label="Rejected">
                         <Value value={decision.rejected} />
                       </Row>
                     )}
@@ -258,13 +260,13 @@ export default async function ProjectPage({ params }) {
         )}
 
         {!isEmpty(related) && (
-          <Section title="관련 프로젝트">
+          <Section en="Related" ko="관련 프로젝트">
             <ul className="flex flex-wrap gap-2">
               {related.map((p) => (
                 <li key={p.id}>
                   <Link
                     href={`/projects/${p.id}`}
-                    className="inline-block rounded-lg border border-line bg-bg px-3 py-1.5 text-sm hover:border-accent hover:text-accent"
+                    className="inset inline-block px-3 py-1.5 text-sm hover:border-accent hover:text-accent"
                   >
                     {p.name}
                   </Link>
