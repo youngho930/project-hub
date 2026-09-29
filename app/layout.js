@@ -1,6 +1,7 @@
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
+import { getGitHubStatus } from "@/lib/github";
 import { getGroups } from "@/lib/projects";
 
 export const metadata = {
@@ -8,7 +9,7 @@ export const metadata = {
   description: "포트폴리오 프로젝트 통합 관리",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
   // 사이드바·상단 바에는 이름과 id만 넘김 (클라이언트로 보낼 데이터 최소화)
   const groups = getGroups().map((group) => ({
     name: group.name,
@@ -17,6 +18,8 @@ export default function RootLayout({ children }) {
   const projectNames = Object.fromEntries(
     groups.flatMap((group) => group.projects.map((p) => [p.id, p.name]))
   );
+  // 연결 상태 글자("연결됨" / "미설정" / "오류")만 넘김
+  const githubStatus = await getGitHubStatus();
 
   return (
     <html lang="ko">
@@ -28,7 +31,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="antialiased">
-        <Sidebar groups={groups} />
+        <Sidebar groups={groups} githubStatus={githubStatus} />
         <div className="ml-60 min-h-screen">
           <Topbar projectNames={projectNames} />
           <main className="px-10 py-10">{children}</main>

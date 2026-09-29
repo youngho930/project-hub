@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUpRight, Network } from "lucide-react";
+import { ArrowUpRight, Lock, Network } from "lucide-react";
+import RelativeTime from "@/components/RelativeTime";
 import { CheckBadge, Value } from "@/components/Value";
+import { GITHUB_STATUS, getRepoActivities, reposOf } from "@/lib/github";
 import { NEEDS_CHECK, getAllProjects, getProject } from "@/lib/projects";
 
 const isEmpty = (value) =>
@@ -71,11 +73,109 @@ function ExternalLink({ href, children }) {
   );
 }
 
-function RepoLink({ repo }) {
+// 비공개 저장소는 방문자가 눌러도 404라서 링크 대신 자물쇠 표시
+function RepoLink({ repo, isPrivate = false }) {
+  if (isPrivate) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-muted">
+        <Lock size={13} className="shrink-0" />
+        비공개 저장소
+      </span>
+    );
+  }
   return (
     <Value value={repo}>
       <ExternalLink href={`https://github.com/${repo}`}>{repo}</ExternalLink>
     </Value>
+  );
+}
+
+function PrivateBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md border border-line bg-inset px-1.5 py-0.5 text-[11px] text-muted">
+      <Lock size={10} />
+      비공개
+    </span>
+  );
+}
+
+// 한 저장소의 마지막 활동 (실패하면 "불러오기 실패")
+function LastActivity({ activity }) {
+  if (!activity?.ok) {
+    return <span className="text-red">불러오기 실패</span>;
+  }
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      <span>
+        마지막 활동 <RelativeTime iso={activity.pushedAt} />
+      </span>
+      {activity.private && <PrivateBadge />}
+    </span>
+  );
+}
+
+function CommitList({ commits }) {
+  if (isEmpty(commits)) {
+    return <p className="text-sm text-muted">커밋 없음</p>;
+  }
+  return (
+    <ul className="divide-y divide-line">
+      {commits.map((commit) => (
+        <li
+          key={commit.sha}
+          className="flex items-baseline gap-4 py-2.5 text-sm first:pt-0 last:pb-0"
+        >
+          <span className="min-w-0 flex-1 truncate">{commit.message}</span>
+          <span className="shrink-0 text-xs text-muted">
+            <RelativeTime iso={commit.date} />
+          </span>
+          <a
+            href={commit.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 font-mono text-xs text-accent hover:underline"
+          >
+            {commit.sha}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// 최근 활동: parts가 있으면 부분별 한 줄씩, 없으면 저장소 하나 + 최근 커밋
+function Activity({ project, github }) {
+  if (github.status !== GITHUB_STATUS.connected) {
+    return <p className="text-sm text-muted">GitHub 연결 안 됨</p>;
+  }
+
+  if (!isEmpty(project.parts)) {
+    const parts = project.parts.filter(
+      (part) => !isEmpty(part.repo) && part.repo !== NEEDS_CHECK
+    );
+    return (
+      <dl>
+        {parts.map((part) => (
+          <Row key={part.name} label={part.name}>
+            <LastActivity activity={github.repos[part.repo]} />
+          </Row>
+        ))}
+      </dl>
+    );
+  }
+
+  const activity = github.repos[project.repo];
+  return (
+    <div className="space-y-4">
+      <div className="text-sm">
+        <LastActivity activity={activity} />
+      </div>
+      {activity?.ok && !activity.private && (
+        <div className="inset p-4">
+          <CommitList commits={activity.commits} />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -96,6 +196,11 @@ export default async function ProjectPage({ params }) {
   const { deploy = {} } = project;
   const hasDeploy = !isEmpty(deploy.platform) || !isEmpty(deploy.url);
   const hasLinks = !isEmpty(project.repo) || hasDeploy;
+
+  // 서버에서 이미 비공개 저장소의 커밋 정보는 걸러진 상태
+  const github = await getRepoActivities();
+  const isPrivate = (repo) => github.repos[repo]?.private === true;
+  const hasRepos = reposOf(project).length > 0;
 
   const allProjects = getAllProjects();
   const related = (project.related ?? [])
@@ -163,7 +268,7 @@ export default async function ProjectPage({ params }) {
             <dl>
               {!isEmpty(project.repo) && (
                 <Row label="Repo">
-                  <RepoLink repo={project.repo} />
+                  <RepoLink repo={project.repo} isPrivate={isPrivate(project.repo)} />
                 </Row>
               )}
               {hasDeploy && (
@@ -184,6 +289,12 @@ export default async function ProjectPage({ params }) {
           </Section>
         )}
 
+        {hasRepos && (
+          <Section en="Activity" ko="최근 활동">
+            <Activity project={project} github={github} />
+          </Section>
+        )}
+
         {!isEmpty(project.tech) && (
           <Section en="Stack" ko="기술">
             <Tags items={project.tech} />
@@ -198,7 +309,7 @@ export default async function ProjectPage({ params }) {
                   <h3 className="font-semibold">{part.name}</h3>
                   {!isEmpty(part.repo) && (
                     <p className="mt-1 text-sm">
-                      <RepoLink repo={part.repo} />
+                      <RepoLink repo={part.repo} isPrivate={isPrivate(part.repo)} />
                     </p>
                   )}
                   {!isEmpty(part.tech) && (

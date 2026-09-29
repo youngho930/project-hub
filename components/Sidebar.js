@@ -15,12 +15,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-// 아직 연결 전이라 점은 모두 회색
-const SOURCES = [
-  { name: "GitHub", Icon: GitBranch },
-  { name: "Calendar", Icon: Calendar },
-  { name: "Jira", Icon: SquareKanban },
-];
+// 연결 상태별 점 색 (Calendar·Jira는 아직 연결 전이라 회색)
+const DOT_COLOR = {
+  연결됨: "bg-green",
+  오류: "bg-red",
+  미설정: "bg-muted/50",
+};
 
 function NavLink({ href, active, Icon, children, className = "" }) {
   return (
@@ -42,9 +42,15 @@ function NavLink({ href, active, Icon, children, className = "" }) {
   );
 }
 
-export default function Sidebar({ groups }) {
+export default function Sidebar({ groups, githubStatus = "미설정" }) {
   const pathname = usePathname();
   const [closed, setClosed] = useState({});
+
+  const sources = [
+    { name: "GitHub", Icon: GitBranch, status: githubStatus },
+    { name: "Calendar", Icon: Calendar, status: "연결 전" },
+    { name: "Jira", Icon: SquareKanban, status: "연결 전" },
+  ];
 
   const toggle = (name) =>
     setClosed((prev) => ({ ...prev, [name]: !prev[name] }));
@@ -118,16 +124,21 @@ export default function Sidebar({ groups }) {
       <div className="mt-auto pt-8">
         <p className="label mb-2 px-3">Sources</p>
         <ul className="space-y-0.5">
-          {SOURCES.map(({ name, Icon }) => (
+          {sources.map(({ name, Icon, status }) => (
             <li
               key={name}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted"
+              title={`${name}: ${status}`}
+              className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted"
             >
               <Icon size={16} />
               <span>{name}</span>
+              {/* 마우스를 올리면 상태 글자 표시 */}
+              <span className="ml-auto text-xs opacity-0 transition-opacity group-hover:opacity-100">
+                {status}
+              </span>
               <span
-                title="연결 전"
-                className="ml-auto size-2 rounded-full bg-muted/50"
+                aria-label={status}
+                className={`size-2 shrink-0 rounded-full ${DOT_COLOR[status] ?? "bg-muted/50"}`}
               />
             </li>
           ))}
