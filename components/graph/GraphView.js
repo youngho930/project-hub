@@ -5,7 +5,15 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Maximize2 } from "lucide-react";
 import NodePanel from "./NodePanel";
-import { TYPE_META, TYPE_ORDER } from "./types";
+import {
+  LABEL_FONT,
+  LABEL_MIN_SCALE,
+  LABEL_SIZE,
+  TYPE_META,
+  TYPE_ORDER,
+  labelWeight,
+  radius,
+} from "./types";
 
 // 브라우저 전용 라이브러리라 서버 렌더링에서 제외
 const ForceGraphCanvas = dynamic(() => import("./ForceGraphCanvas"), {
@@ -17,25 +25,13 @@ const ForceGraphCanvas = dynamic(() => import("./ForceGraphCanvas"), {
   ),
 });
 
-const FONT = '"Pretendard Variable", Pretendard, system-ui, sans-serif';
 const FOCUS_DEPTH = 2;
 const LABEL_ZOOM = 2.2; // 이 배율 이상 확대하면 모든 이름 표시
 
 // 라이브러리가 링크의 source/target을 노드 객체로 바꿔 넣기 때문에 둘 다 처리
 const endId = (end) => (typeof end === "object" ? end.id : end);
 
-function radius(node) {
-  switch (node.type) {
-    case "project":
-      return 9;
-    case "tech":
-      return Math.min(8, 2.5 + Math.sqrt(node.degree) * 1.8);
-    case "part":
-      return 5;
-    default:
-      return 3.5;
-  }
-}
+const FIT_PADDING = 40; // 화면 맞춤 때 남기는 여백(px)
 
 function withinDepth(startId, neighbors, depth) {
   const seen = new Set([startId]);
@@ -176,7 +172,7 @@ export default function GraphView({ graph, focus }) {
       fg.centerAt(node.x, node.y, 800);
       fg.zoom(2.6, 800);
     } else {
-      fg.zoomToFit(600, 60);
+      fg.zoomToFit(600, FIT_PADDING);
     }
   }, [engineDone, focusNodeId, nodeById]);
 
@@ -201,7 +197,7 @@ export default function GraphView({ graph, focus }) {
       router.replace("/graph", { scroll: false });
     } else {
       setSelectedId(null);
-      fgRef.current?.zoomToFit(600, 60);
+      fgRef.current?.zoomToFit(600, FIT_PADDING);
     }
   };
 
@@ -242,25 +238,28 @@ export default function GraphView({ graph, focus }) {
         ctx.stroke();
       }
 
+      // 프로젝트·기술·구성은 항상, 나머지는 마우스를 올리거나 확대했을 때만
+      const alwaysLabel = node.type in LABEL_SIZE;
       const showLabel =
-        node.type === "project" ||
-        node.type === "tech" ||
+        alwaysLabel ||
         hovered ||
         selected ||
         scale >= LABEL_ZOOM;
 
       if (showLabel) {
         const isProject = node.type === "project";
-        const fontSize = (isProject ? 13 : 11) / scale;
+        // 많이 축소하면 글자도 같이 작아짐 (충돌 반경과 같은 기준)
+        const labelScale = Math.max(scale, LABEL_MIN_SCALE);
+        const fontSize = (LABEL_SIZE[node.type] ?? 10) / labelScale;
         const full = hovered || selected;
         const text =
           !full && node.name.length > 22 ? `${node.name.slice(0, 21)}…` : node.name;
-        ctx.font = `${isProject ? 600 : 400} ${fontSize}px ${FONT}`;
+        ctx.font = `${labelWeight(node)} ${fontSize}px ${LABEL_FONT}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         ctx.globalAlpha = active ? (isProject || full ? 1 : 0.75) : 0.12;
         ctx.fillStyle = "#e5e7eb";
-        ctx.fillText(text, node.x, node.y + r + 3 / scale);
+        ctx.fillText(text, node.x, node.y + r + 3 / labelScale);
       }
 
       ctx.restore();
@@ -365,7 +364,7 @@ export default function GraphView({ graph, focus }) {
               onBackgroundClick={() => setSelectedId(null)}
               onEngineStop={() => setEngineDone(true)}
               warmupTicks={40}
-              cooldownTicks={160}
+              cooldownTicks={300}
               autoPauseRedraw={false}
             />
           )}

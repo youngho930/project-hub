@@ -132,9 +132,10 @@ export default async function ProjectPage({ params }) {
         {!isEmpty(project.results) && (
           <section>
             <SectionLabel en="Results" ko="효과" />
-            <ul className="mt-3 flex flex-wrap gap-4">
+            {/* 한 줄 3칸 고정: 카드가 1~2개여도 한 칸 폭만 차지 */}
+            <ul className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {project.results.map((result, i) => (
-                <li key={i} className="card min-w-48 flex-1">
+                <li key={i} className="card">
                   <p className="text-xs text-muted">
                     <Value value={result.label} />
                   </p>
