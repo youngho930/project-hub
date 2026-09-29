@@ -8,6 +8,7 @@ import {
   FolderOpen,
   GitBranch,
   LayoutGrid,
+  Share2,
   SquareKanban,
 } from "lucide-react";
 import Link from "next/link";
@@ -56,6 +57,14 @@ export default function Sidebar({ groups }) {
 
       <NavLink href="/" active={pathname === "/"} Icon={LayoutGrid}>
         전체 보기
+      </NavLink>
+      <NavLink
+        href="/graph"
+        active={pathname === "/graph"}
+        Icon={Share2}
+        className="mt-0.5"
+      >
+        지식 그래프
       </NavLink>
 
       <p className="label mt-7 mb-2 px-3">Projects</p>

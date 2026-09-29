@@ -8,6 +8,7 @@ function crumbsFor(pathname, projectNames) {
     const id = decodeURIComponent(pathname.split("/")[2] ?? "");
     return ["프로젝트", projectNames[id] ?? id];
   }
+  if (pathname === "/graph") return ["지식 그래프"];
   return ["개요"];
 }
 

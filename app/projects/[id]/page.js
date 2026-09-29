@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, Network } from "lucide-react";
+import { CheckBadge, Value } from "@/components/Value";
 import { NEEDS_CHECK, getAllProjects, getProject } from "@/lib/projects";
 
 const isEmpty = (value) =>
@@ -17,20 +18,6 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   const project = getProject(id);
   return { title: project ? `${project.name} · Project Hub` : "Project Hub" };
-}
-
-function CheckBadge() {
-  return (
-    <span className="inline-block rounded-md border border-yellow-400/40 bg-yellow-400/15 px-2 py-0.5 text-xs font-semibold text-yellow-300">
-      {NEEDS_CHECK}
-    </span>
-  );
-}
-
-// "확인 필요"는 노란 배지로, 그 외엔 글자 그대로
-function Value({ value, children }) {
-  if (value === NEEDS_CHECK) return <CheckBadge />;
-  return children ?? value;
 }
 
 // 라벨: 작은 대문자 영문 + 옆에 회색 한글
@@ -132,15 +119,13 @@ export default async function ProjectPage({ params }) {
             </p>
           )}
         </div>
-        <button
-          type="button"
-          disabled
-          title="다음 단계에서 제공"
-          className="flex shrink-0 cursor-not-allowed items-center gap-2 rounded-lg border border-line bg-card px-4 py-2 text-sm text-muted opacity-60"
+        <Link
+          href={`/graph?focus=${encodeURIComponent(project.id)}`}
+          className="flex shrink-0 items-center gap-2 rounded-lg border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-accent hover:text-accent"
         >
           <Network size={15} />
-          그래프 보기 (다음 단계)
-        </button>
+          그래프 보기
+        </Link>
       </header>
 
       <div className="mt-8 space-y-4">
