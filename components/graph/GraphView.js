@@ -51,8 +51,16 @@ function withinDepth(startId, neighbors, depth) {
   return seen;
 }
 
-export default function GraphView({ graph, focus }) {
+export default function GraphView({ graph: incoming, focus }) {
   const router = useRouter();
+
+  // 주소(?focus)만 바뀌어도 서버가 같은 내용의 새 객체를 보낸다.
+  // 그대로 쓰면 노드가 새로 만들어져 좌표가 사라지므로(화면 맞춤이 NaN), 내용이 같으면 이전 것을 유지
+  const incomingKey = useMemo(() => JSON.stringify(incoming), [incoming]);
+  const [stable, setStable] = useState({ key: incomingKey, graph: incoming });
+  if (stable.key !== incomingKey) setStable({ key: incomingKey, graph: incoming });
+  const graph = stable.graph;
+
   const fgRef = useRef();
   const boxRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -61,13 +69,18 @@ export default function GraphView({ graph, focus }) {
   const [engineDone, setEngineDone] = useState(false);
   const [fontTick, setFontTick] = useState(0);
 
-  const focusNodeId = focus ? `project:${focus}` : null;
+  // 전체 보기를 누르면 주소가 바뀌기 전에도 포커스를 바로 해제
+  const [focusCleared, setFocusCleared] = useState(false);
+  if (focusCleared && !focus) setFocusCleared(false);
+  const activeFocus = focusCleared ? null : focus;
+
+  const focusNodeId = activeFocus ? `project:${activeFocus}` : null;
   const [selectedId, setSelectedId] = useState(focusNodeId);
 
   // 포커스가 바뀌면 패널도 그 프로젝트로 (전체 보기면 비움)
-  const [prevFocus, setPrevFocus] = useState(focus);
-  if (prevFocus !== focus) {
-    setPrevFocus(focus);
+  const [prevFocus, setPrevFocus] = useState(activeFocus);
+  if (prevFocus !== activeFocus) {
+    setPrevFocus(activeFocus);
     setSelectedId(focusNodeId);
   }
 
@@ -192,13 +205,15 @@ export default function GraphView({ graph, focus }) {
     [nodeById]
   );
 
+  // 한 번에: 포커스·선택 해제, 주소의 ?focus 제거, 전체 노드 화면 맞춤
   const showAll = () => {
+    setSelectedId(null);
+    setHoverId(null);
     if (focus) {
+      setFocusCleared(true);
       router.replace("/graph", { scroll: false });
-    } else {
-      setSelectedId(null);
-      fgRef.current?.zoomToFit(600, FIT_PADDING);
     }
+    fgRef.current?.zoomToFit(600, FIT_PADDING);
   };
 
   const toggleType = (type) =>

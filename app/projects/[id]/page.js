@@ -204,7 +204,7 @@ export default async function ProjectPage({ params }) {
   const github = await getRepoActivities();
   const isPrivate = (repo) => github.repos[repo]?.private === true;
   const hasRepos = reposOf(project).length > 0;
-  // public/previews/<id>.(png|jpg|webp) 가 있을 때만
+  // public/previews/manifest.json 에 이미지 파일이 적혀 있을 때만
   const preview = getPreview(project.id);
   const deployUrl = /^https?:\/\//.test(deploy.url ?? "") ? deploy.url : null;
 

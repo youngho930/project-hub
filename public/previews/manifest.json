@@ -1,15 +1,19 @@
 {
   "excel-merger": {
+    "file": "excel-merger.png",
     "capturedAt": "2026-09-30"
   },
   "inventory-dashboard": {
+    "file": "inventory-dashboard.png",
     "capturedAt": "2026-09-30"
   },
   "jarvis": {
+    "file": "jarvis.png",
     "capturedAt": "2026-09-30",
     "manual": true
   },
   "qc-ai-assistant": {
+    "file": "qc-ai-assistant.png",
     "capturedAt": "2026-09-30"
   }
 }
