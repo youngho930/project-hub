@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { AlertTriangle, ChevronRight } from "lucide-react";
 import { CHECKLIST_SIZE, getCompletion, getMissed } from "@/lib/projects";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata = {
-  title: "관리 · Project Hub",
-};
+export const metadata = pageMetadata({
+  title: "관리",
+  description: "포트폴리오 프로젝트별 체크리스트(저장소, 문제, 결정 이유, 효과, 기술)가 얼마나 채워졌는지 보여주는 관리 화면.",
+  path: "/status",
+});
 
 function Donut({ percent }) {
   const size = 148;

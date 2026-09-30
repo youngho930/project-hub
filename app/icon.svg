@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Project Hub 아이콘: 가운데 허브와 세 노드가 이어진 모양 (16px 에서도 보이게 굵게) -->
+  <rect width="32" height="32" rx="7" fill="#131823"/>
+  <g stroke="#f59e0b" stroke-width="2.4" stroke-linecap="round" opacity="0.85">
+    <path d="M16 16.5 L8.5 9"/>
+    <path d="M16 16.5 L23.5 9"/>
+    <path d="M16 16.5 L16 25"/>
+  </g>
+  <circle cx="8.5" cy="9" r="3.3" fill="#fbbf24"/>
+  <circle cx="23.5" cy="9" r="3.3" fill="#fbbf24"/>
+  <circle cx="16" cy="25" r="3.3" fill="#fbbf24"/>
+  <circle cx="16" cy="16.5" r="5" fill="#f59e0b"/>
+  <circle cx="16" cy="16.5" r="2" fill="#131823"/>
+</svg>

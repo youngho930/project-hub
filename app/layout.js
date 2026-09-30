@@ -4,11 +4,10 @@ import { getCalendarSummary } from "@/lib/calendar";
 import { getGitHubStatus } from "@/lib/github";
 import { getPipeline } from "@/lib/pipeline";
 import { getGroups } from "@/lib/projects";
+import { rootMetadata } from "@/lib/site";
 
-export const metadata = {
-  title: "신영호 · Project Hub",
-  description: "현장의 반복 업무를 직접 찾아 자동화하는 신영호의 포트폴리오",
-};
+// 제목·설명·링크 미리보기(openGraph, 트위터 카드). 내용은 lib/site.js (data/profile.json 기반)
+export const metadata = rootMetadata;
 
 export default async function RootLayout({ children }) {
   // 사이드바·상단 바에는 이름과 id만 넘김 (클라이언트로 보낼 데이터 최소화)

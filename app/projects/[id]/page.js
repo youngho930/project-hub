@@ -8,6 +8,7 @@ import { CheckBadge, Value } from "@/components/Value";
 import { GITHUB_STATUS, getRepoActivities, reposOf } from "@/lib/github";
 import { getPreview } from "@/lib/previews";
 import { NEEDS_CHECK, getAllProjects, getProject } from "@/lib/projects";
+import { pageMetadata } from "@/lib/site";
 
 const isEmpty = (value) =>
   value === undefined ||
@@ -22,7 +23,13 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const { id } = await params;
   const project = getProject(id);
-  return { title: project ? `${project.name} · Project Hub` : "Project Hub" };
+  if (!project) return { title: "프로젝트" };
+  // 링크 미리보기: 프로젝트 이름과 요약 (이미지는 같은 폴더의 opengraph-image)
+  return pageMetadata({
+    title: project.name,
+    description: project.summary,
+    path: `/projects/${project.id}`,
+  });
 }
 
 // 라벨: 작은 대문자 영문 + 옆에 회색 한글

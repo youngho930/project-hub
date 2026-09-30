@@ -2,10 +2,13 @@ import GraphView from "@/components/graph/GraphView";
 import { getRepoActivities } from "@/lib/github";
 import { getGraph } from "@/lib/graph";
 import { getPreview } from "@/lib/previews";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata = {
-  title: "지식 그래프 · Project Hub",
-};
+export const metadata = pageMetadata({
+  title: "지식 그래프",
+  description: "프로젝트마다 쓴 기술, 내린 결정, 만든 효과를 노드로 연결한 지식 그래프. 같은 기술을 쓴 프로젝트끼리 어떻게 이어지는지 볼 수 있습니다.",
+  path: "/graph",
+});
 
 export default async function GraphPage({ searchParams }) {
   const { focus } = await searchParams;
