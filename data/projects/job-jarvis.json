@@ -30,7 +30,26 @@
       "rejected": "사람인 API (신청 필요)"
     }
   ],
-  "results": [],
+  "results": [
+    {
+      "label": "일일 공고 탐색 시간",
+      "before": "30~40분",
+      "after": "약 5분",
+      "note": "본인 체감 기준 · 매일 9시 메일 확인"
+    },
+    {
+      "label": "운영 기간",
+      "before": "",
+      "after": "44일",
+      "note": "매일 오전 9시 자동 실행 39회, 실패 0회"
+    },
+    {
+      "label": "수집 공고",
+      "before": "",
+      "after": "63건",
+      "note": "마감 경과 43건 자동 정리"
+    }
+  ],
   "related": [
     "jarvis"
   ]
