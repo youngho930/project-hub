@@ -11,16 +11,23 @@ import {
   Sun,
   Users,
 } from "lucide-react";
+import { CALENDAR_STATUS, getCalendarSummary } from "@/lib/calendar";
 import { CHECKLIST_SIZE, getCompletion, getMissed } from "@/lib/projects";
 
 const RANGES = ["오늘", "7일", "30일"];
 
-// 캘린더 연결 전이라 모두 0
+// 구글 캘린더 일정 개수 (오늘 / 내일부터 7일 / 8일부터 30일)
 const BOARD = [
-  { label: "오늘", Icon: Sun, color: "bg-orange", count: 0 },
-  { label: "이번 주", Icon: CalendarDays, color: "bg-green", count: 0 },
-  { label: "나중에", Icon: Hourglass, color: "bg-blue", count: 0 },
+  { key: "today", label: "오늘", Icon: Sun, color: "bg-orange" },
+  { key: "week", label: "이번 주", Icon: CalendarDays, color: "bg-green" },
+  { key: "later", label: "나중에", Icon: Hourglass, color: "bg-blue" },
 ];
+
+const BOARD_CAPTION = {
+  [CALENDAR_STATUS.connected]: "구글 캘린더 · 10분마다 갱신",
+  [CALENDAR_STATUS.unset]: "캘린더 연결 전",
+  [CALENDAR_STATUS.error]: "캘린더 불러오기 실패",
+};
 
 // 지원 현황 연결 전이라 모두 0
 const PIPELINE = [
@@ -108,8 +115,12 @@ function sum(items) {
   return items.reduce((total, item) => total + item.count, 0);
 }
 
-export default function Home() {
+export default async function Home() {
   const completion = getCompletion();
+  // 개수와 상태만 받음 (일정 내용은 서버 밖으로 나오지 않음)
+  const calendar = await getCalendarSummary();
+  const board = BOARD.map((item) => ({ ...item, count: calendar.counts[item.key] }));
+  const boardMax = Math.max(...board.map((item) => item.count));
   const missed = getMissed();
 
   return (
@@ -160,12 +171,19 @@ export default function Home() {
         <section className="card flex flex-col">
           <div className="flex items-center justify-between">
             <h2 className="label">Board</h2>
-            <span className="text-2xl font-bold">{sum(BOARD)}</span>
+            <span className="text-2xl font-bold">{sum(board)}</span>
           </div>
           <div className="mt-6 flex-1">
-            <BarList items={BOARD} max={sum(BOARD)} />
+            {/* 막대 길이: 세 값 중 가장 큰 값 기준 비율 */}
+            <BarList items={board} max={boardMax} />
           </div>
-          <p className="mt-6 text-xs text-muted">캘린더 연결 전</p>
+          <p
+            className={`mt-6 text-xs ${
+              calendar.status === CALENDAR_STATUS.error ? "text-red" : "text-muted"
+            }`}
+          >
+            {BOARD_CAPTION[calendar.status]}
+          </p>
         </section>
 
         <section className="card flex flex-col">

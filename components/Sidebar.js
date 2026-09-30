@@ -15,7 +15,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-// 연결 상태별 점 색 (Calendar·Jira는 아직 연결 전이라 회색)
+// 연결 상태별 점 색 (Jira는 아직 연결 전이라 회색)
 const DOT_COLOR = {
   연결됨: "bg-green",
   오류: "bg-red",
@@ -42,13 +42,17 @@ function NavLink({ href, active, Icon, children, className = "" }) {
   );
 }
 
-export default function Sidebar({ groups, githubStatus = "미설정" }) {
+export default function Sidebar({
+  groups,
+  githubStatus = "미설정",
+  calendarStatus = "미설정",
+}) {
   const pathname = usePathname();
   const [closed, setClosed] = useState({});
 
   const sources = [
     { name: "GitHub", Icon: GitBranch, status: githubStatus },
-    { name: "Calendar", Icon: Calendar, status: "연결 전" },
+    { name: "Calendar", Icon: Calendar, status: calendarStatus },
     { name: "Jira", Icon: SquareKanban, status: "연결 전" },
   ];
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Lock } from "lucide-react";
 import { Value } from "@/components/Value";
 import { TYPE_META, TYPE_ORDER } from "./types";
 
@@ -165,6 +165,14 @@ function Body({ node, onGo }) {
     case "part":
       return (
         <>
+          {node.repoPrivate && (
+            <Field label="Repo">
+              <span className="inline-flex items-center gap-1.5 text-muted">
+                <Lock size={13} className="shrink-0" />
+                비공개 저장소
+              </span>
+            </Field>
+          )}
           {!isEmpty(node.repo) && (
             <Field label="Repo">
               <Value value={node.repo}>
