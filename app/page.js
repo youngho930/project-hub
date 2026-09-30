@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { CALENDAR_STATUS, getCalendarSummary } from "@/lib/calendar";
+import { PIPELINE_STATUS, formatKst, getPipeline } from "@/lib/pipeline";
 import { CHECKLIST_SIZE, getCompletion, getMissed } from "@/lib/projects";
 
 const RANGES = ["오늘", "7일", "30일"];
@@ -29,13 +30,13 @@ const BOARD_CAPTION = {
   [CALENDAR_STATUS.error]: "캘린더 불러오기 실패",
 };
 
-// 지원 현황 연결 전이라 모두 0
+// Job Jarvis 지원 단계별 개수 (Upstash hub:pipeline)
 const PIPELINE = [
-  { label: "저장", Icon: Bookmark, color: "bg-blue", count: 0 },
-  { label: "지원", Icon: Send, color: "bg-orange", count: 0 },
-  { label: "서류", Icon: FileText, color: "bg-orange", count: 0 },
-  { label: "면접", Icon: Users, color: "bg-red", count: 0 },
-  { label: "결과", Icon: Flag, color: "bg-green", count: 0 },
+  { key: "saved", label: "저장", Icon: Bookmark, color: "bg-blue" },
+  { key: "applied", label: "지원", Icon: Send, color: "bg-orange" },
+  { key: "screening", label: "서류", Icon: FileText, color: "bg-orange" },
+  { key: "interview", label: "면접", Icon: Users, color: "bg-red" },
+  { key: "result", label: "결과", Icon: Flag, color: "bg-green" },
 ];
 
 function Donut({ percent }) {
@@ -121,6 +122,13 @@ export default async function Home() {
   const calendar = await getCalendarSummary();
   const board = BOARD.map((item) => ({ ...item, count: calendar.counts[item.key] }));
   const boardMax = Math.max(...board.map((item) => item.count));
+  // 지원 단계 개수와 갱신 시각만 받음 (공고 내용은 Upstash 에도 없음)
+  const pipeline = await getPipeline();
+  const stages = PIPELINE.map((item) => ({ ...item, count: pipeline.counts[item.key] }));
+  const stagesMax = Math.max(...stages.map((item) => item.count));
+  const pipelineConnected =
+    pipeline.status === PIPELINE_STATUS.connected ||
+    pipeline.status === PIPELINE_STATUS.stale;
   const missed = getMissed();
 
   return (
@@ -189,12 +197,35 @@ export default async function Home() {
         <section className="card flex flex-col">
           <div className="flex items-center justify-between">
             <h2 className="label">Pipeline</h2>
-            <span className="text-2xl font-bold">{sum(PIPELINE)}</span>
+            {/* 단계끼리 겹치는 숫자라 합계 대신 지원 건수 */}
+            <span className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold">{pipeline.counts.applied}</span>
+              <span className="text-xs text-muted">지원</span>
+            </span>
           </div>
           <div className="mt-6 flex-1">
-            <BarList items={PIPELINE} max={sum(PIPELINE)} />
+            {/* 막대 길이: 다섯 값 중 가장 큰 값 기준 비율 */}
+            <BarList items={stages} max={stagesMax} />
           </div>
-          <p className="mt-6 text-xs text-muted">지원 현황 연결 전</p>
+          <p
+            className={`mt-6 text-xs ${
+              pipeline.status === PIPELINE_STATUS.error ? "text-red" : "text-muted"
+            }`}
+          >
+            {pipelineConnected ? (
+              <>
+                Job Jarvis · 매일 9시 갱신 · 마지막{" "}
+                {formatKst(pipeline.updatedAt) ?? "-"}
+                {pipeline.status === PIPELINE_STATUS.stale && (
+                  <span className="ml-1.5 font-semibold text-orange">갱신 지연</span>
+                )}
+              </>
+            ) : pipeline.status === PIPELINE_STATUS.unset ? (
+              "지원 현황 연결 전"
+            ) : (
+              "지원 현황 불러오기 실패"
+            )}
+          </p>
         </section>
 
         <section className="card border-red/40">

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Briefcase,
   Calendar,
   ChevronRight,
   FileText,
@@ -21,6 +22,7 @@ const DOT_COLOR = {
   연결됨: "bg-green",
   오류: "bg-red",
   미설정: "bg-muted/50",
+  지연: "bg-orange",
 };
 
 function NavLink({ href, active, Icon, badge, children, className = "" }) {
@@ -48,6 +50,7 @@ export default function Sidebar({
   groups,
   githubStatus = "미설정",
   calendarStatus = "미설정",
+  pipelineStatus = "미설정",
 }) {
   const pathname = usePathname();
   const [closed, setClosed] = useState({});
@@ -55,6 +58,7 @@ export default function Sidebar({
   const sources = [
     { name: "GitHub", Icon: GitBranch, status: githubStatus },
     { name: "Calendar", Icon: Calendar, status: calendarStatus },
+    { name: "Job Jarvis", Icon: Briefcase, status: pipelineStatus },
     { name: "Jira", Icon: SquareKanban, status: "연결 전" },
   ];
 

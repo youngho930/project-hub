@@ -3,6 +3,7 @@ import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import { getCalendarSummary } from "@/lib/calendar";
 import { getGitHubStatus } from "@/lib/github";
+import { getPipeline } from "@/lib/pipeline";
 import { getGroups } from "@/lib/projects";
 
 export const metadata = {
@@ -20,9 +21,10 @@ export default async function RootLayout({ children }) {
     groups.flatMap((group) => group.projects.map((p) => [p.id, p.name]))
   );
   // 연결 상태 글자("연결됨" / "미설정" / "오류")만 넘김
-  const [githubStatus, calendar] = await Promise.all([
+  const [githubStatus, calendar, pipeline] = await Promise.all([
     getGitHubStatus(),
     getCalendarSummary(),
+    getPipeline(),
   ]);
 
   return (
@@ -39,6 +41,7 @@ export default async function RootLayout({ children }) {
           groups={groups}
           githubStatus={githubStatus}
           calendarStatus={calendar.status}
+          pipelineStatus={pipeline.status}
         />
         <div className="ml-60 min-h-screen">
           <Topbar projectNames={projectNames} />
