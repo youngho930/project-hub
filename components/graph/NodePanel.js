@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect } from "react";
 import PreviewFrame from "@/components/PreviewFrame";
 import { ILLUSTRATIONS } from "@/components/illustrations";
-import { ArrowUpRight, Lock } from "lucide-react";
+import { ArrowUpRight, Lock, X } from "lucide-react";
 import { Value } from "@/components/Value";
 import { TYPE_META, TYPE_ORDER } from "./types";
 
@@ -236,27 +239,33 @@ function Body({ node, onGo }) {
   }
 }
 
+// 노드 제목 + 종류별 내용 (넓은 화면 패널과 좁은 화면 바텀 시트에서 같이 사용)
+function NodeDetails({ node, onGo, titleId }) {
+  return (
+    <div className="space-y-5">
+      <div>
+        <p className="flex items-center gap-2">
+          <Dot type={node.type} />
+          <span className="label">{TYPE_META[node.type].label}</span>
+        </p>
+        <h2 id={titleId} className="mt-2 text-lg font-bold leading-snug">
+          {node.type === "result" ? node.label : node.name}
+        </h2>
+        {node.type === "project" && <p className="mt-1 text-xs text-muted">{node.group}</p>}
+      </div>
+      <div className="space-y-5">
+        <Body node={node} onGo={onGo} />
+      </div>
+    </div>
+  );
+}
+
+// 넓은 화면(lg 이상) 오른쪽 패널
 export default function NodePanel({ node, counts, onGo }) {
   return (
-    <aside className="card w-80 shrink-0 overflow-y-auto">
+    <aside className="card hidden w-80 shrink-0 overflow-y-auto lg:block">
       {node ? (
-        <div className="space-y-5">
-          <div>
-            <p className="flex items-center gap-2">
-              <Dot type={node.type} />
-              <span className="label">{TYPE_META[node.type].label}</span>
-            </p>
-            <h2 className="mt-2 text-lg font-bold leading-snug">
-              {node.type === "result" ? node.label : node.name}
-            </h2>
-            {node.type === "project" && (
-              <p className="mt-1 text-xs text-muted">{node.group}</p>
-            )}
-          </div>
-          <div className="space-y-5">
-            <Body node={node} onGo={onGo} />
-          </div>
-        </div>
+        <NodeDetails node={node} onGo={onGo} />
       ) : (
         <>
           <h2 className="label mb-3">Info</h2>
@@ -264,5 +273,60 @@ export default function NodePanel({ node, counts, onGo }) {
         </>
       )}
     </aside>
+  );
+}
+
+// 좁은 화면: 그래프 아래 종류별 개수 한 줄
+export function TypeCounts({ counts, className = "" }) {
+  return (
+    <p className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted ${className}`}>
+      {TYPE_ORDER.map((type) => (
+        <span key={type} className="flex items-center gap-1.5 whitespace-nowrap">
+          <Dot type={type} />
+          {TYPE_META[type].label}
+          <b className="text-text">{counts[type] ?? 0}</b>
+        </span>
+      ))}
+      <span className="ml-auto">노드를 누르면 자세히</span>
+    </p>
+  );
+}
+
+// 좁은 화면(lg 미만): 노드를 누르면 아래에서 올라오는 창.
+// 최대 높이 화면의 절반, 내용이 길면 안에서 스크롤. 닫기 버튼·바깥 누르기·Esc 로 닫힘
+export function NodeSheet({ node, onGo, onClose }) {
+  useEffect(() => {
+    if (!node) return;
+    const onKey = (event) => event.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [node, onClose]);
+
+  if (!node) return null;
+  return (
+    <div className="lg:hidden">
+      <div aria-hidden="true" onClick={onClose} className="fixed inset-0 z-30 bg-black/50" />
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="node-sheet-title"
+        className="sheet-up fixed inset-x-0 bottom-0 z-40 flex max-h-[50svh] flex-col rounded-t-2xl border-t border-line bg-card shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.8)]"
+      >
+        <div className="flex shrink-0 items-center justify-between px-5 pt-3 pb-1">
+          <span aria-hidden="true" className="mx-auto h-1 w-10 rounded-full bg-line" />
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="정보 창 닫기"
+          className="absolute top-3 right-3 rounded-lg p-1.5 text-muted hover:bg-line/40 hover:text-text"
+        >
+          <X size={18} />
+        </button>
+        <div className="overflow-y-auto overscroll-contain px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          <NodeDetails node={node} onGo={onGo} titleId="node-sheet-title" />
+        </div>
+      </section>
+    </div>
   );
 }

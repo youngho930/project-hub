@@ -82,10 +82,26 @@ body {
     }
   }
 
+  /* 바텀 시트가 아래에서 올라오는 움직임 (움직임 줄이기면 없음) */
+  @media (prefers-reduced-motion: no-preference) {
+    .sheet-up {
+      animation: sheet-up 220ms ease-out;
+    }
+  }
+
   /* 카드 안의 한 단계 어두운 칸 */
   .inset {
     border: 1px solid var(--color-line);
     border-radius: 10px;
     background: var(--color-inset);
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
   }
 }

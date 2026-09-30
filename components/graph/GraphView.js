@@ -2,9 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Maximize2 } from "lucide-react";
-import NodePanel from "./NodePanel";
+import NodePanel, { NodeSheet, TypeCounts } from "./NodePanel";
 import {
   LABEL_FONT,
   LABEL_MIN_SCALE,
@@ -32,6 +32,20 @@ const LABEL_ZOOM = 2.2; // 이 배율 이상 확대하면 모든 이름 표시
 const endId = (end) => (typeof end === "object" ? end.id : end);
 
 const FIT_PADDING = 40; // 화면 맞춤 때 남기는 여백(px)
+
+// 마우스 올리기가 없는 기기(휴대폰·태블릿)인지. 서버 렌더링에서는 false
+const HOVERLESS = "(hover: none)";
+function subscribeHover(callback) {
+  const query = window.matchMedia(HOVERLESS);
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+const useHoverless = () =>
+  useSyncExternalStore(
+    subscribeHover,
+    () => window.matchMedia(HOVERLESS).matches,
+    () => false
+  );
 
 function withinDepth(startId, neighbors, depth) {
   const seen = new Set([startId]);
@@ -120,18 +134,28 @@ export default function GraphView({ graph: incoming, focus }) {
     [hoverId, neighbors]
   );
 
-  // 마우스를 올린 노드가 있으면 그 이웃이, 없으면 포커스 범위가 밝게
-  const activeSet = hoverSet ?? focusSet;
+  // 마우스 올리기가 없는 기기에서는 누른 노드의 이웃을 밝게 (마우스 올리기 대신).
+  // 포커스 노드 자체가 선택된 상태면 포커스 범위(depth 2)를 그대로 보여줌
+  const hoverless = useHoverless();
+  const tapId = hoverless && selectedId !== focusNodeId ? selectedId : null;
+  const tapSet = useMemo(
+    () => (tapId ? new Set([tapId, ...(neighbors.get(tapId) ?? [])]) : null),
+    [tapId, neighbors]
+  );
+  const highlightId = hoverId ?? tapId;
+
+  // 마우스를 올린(또는 누른) 노드가 있으면 그 이웃이, 없으면 포커스 범위가 밝게
+  const activeSet = hoverSet ?? tapSet ?? focusSet;
 
   const isLinkActive = useCallback(
     (link) => {
       const s = endId(link.source);
       const t = endId(link.target);
-      if (hoverId) return s === hoverId || t === hoverId;
+      if (highlightId) return s === highlightId || t === highlightId;
       if (focusSet) return focusSet.has(s) && focusSet.has(t);
       return true;
     },
-    [hoverId, focusSet]
+    [highlightId, focusSet]
   );
 
   const isVisibleId = useCallback(
@@ -176,18 +200,34 @@ export default function GraphView({ graph: incoming, focus }) {
       .catch(() => {});
   }, [graph]);
 
-  // 배치가 끝난 뒤: 포커스면 그 노드로 이동·확대, 아니면 전체가 보이게
+  // 배치가 끝난 뒤, 그리고 영역 크기가 바뀔 때(화면 회전·창 크기 변경):
+  // 포커스면 그 노드로 이동·확대, 아니면 전체가 보이게
   useEffect(() => {
     const fg = fgRef.current;
-    if (!engineDone || !fg) return;
-    const node = focusNodeId && nodeById.get(focusNodeId);
-    if (node) {
-      fg.centerAt(node.x, node.y, 800);
-      fg.zoom(2.6, 800);
-    } else {
-      fg.zoomToFit(600, FIT_PADDING);
-    }
-  }, [engineDone, focusNodeId, nodeById]);
+    if (!engineDone || !fg || size.width === 0) return;
+    // 캔버스 크기가 먼저 바뀐 뒤에 맞추도록 잠깐 기다림 (연속 변경은 마지막 한 번만)
+    const timer = setTimeout(() => {
+      const node = focusNodeId && nodeById.get(focusNodeId);
+      if (node) {
+        fg.centerAt(node.x, node.y, 800);
+        fg.zoom(2.6, 800);
+      } else {
+        fg.zoomToFit(600, FIT_PADDING);
+      }
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [engineDone, focusNodeId, nodeById, size.width, size.height]);
+
+  // 좁은 화면의 바텀 시트: 노드를 누르면 열림 (주소의 포커스로 처음 선택된 노드는 열지 않음)
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const selectNode = (id) => {
+    setSelectedId(id);
+    setSheetOpen(id !== null);
+  };
+  const closeSheet = () => {
+    setSheetOpen(false);
+    setSelectedId(null);
+  };
 
   const goToNode = useCallback(
     (id) => {
@@ -200,6 +240,7 @@ export default function GraphView({ graph: incoming, focus }) {
         return next;
       });
       setSelectedId(id);
+      setSheetOpen(true);
       fgRef.current?.centerAt(node.x, node.y, 600);
     },
     [nodeById]
@@ -208,6 +249,7 @@ export default function GraphView({ graph: incoming, focus }) {
   // 한 번에: 포커스·선택 해제, 주소의 ?focus 제거, 전체 노드 화면 맞춤
   const showAll = () => {
     setSelectedId(null);
+    setSheetOpen(false);
     setHoverId(null);
     if (focus) {
       setFocusCleared(true);
@@ -229,7 +271,7 @@ export default function GraphView({ graph: incoming, focus }) {
       const r = radius(node);
       const { color } = TYPE_META[node.type];
       const active = !activeSet || activeSet.has(node.id);
-      const hovered = node.id === hoverId;
+      const hovered = node.id === highlightId;
       const selected = node.id === selectedId;
 
       ctx.save();
@@ -281,7 +323,7 @@ export default function GraphView({ graph: incoming, focus }) {
     },
     // fontTick: 글꼴을 불러온 뒤 다시 그리기
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeSet, hoverId, selectedId, fontTick]
+    [activeSet, highlightId, selectedId, fontTick]
   );
 
   const paintPointerArea = useCallback((node, color, ctx) => {
@@ -294,7 +336,9 @@ export default function GraphView({ graph: incoming, focus }) {
   const selectedNode = selectedId ? nodeById.get(selectedId) : null;
 
   return (
-    <div className="flex h-[calc(100vh-136px)] min-h-[560px] flex-col">
+    // 넓은 화면(lg 이상): 화면 높이에 맞춘 그래프 + 오른쪽 패널
+    // 좁은 화면: 그래프를 전체 폭·화면 높이의 65%(최소 360px)로, 정보는 바텀 시트
+    <div className="flex flex-col lg:h-[calc(100vh-136px)] lg:min-h-[560px]">
       <header className="flex shrink-0 flex-wrap items-start justify-between gap-4">
         <div>
           <p className="label">Graph</p>
@@ -340,12 +384,12 @@ export default function GraphView({ graph: incoming, focus }) {
         </span>
       </header>
 
-      <div className="mt-5 flex min-h-0 flex-1 gap-4">
+      <div className="mt-5 flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
         <div
           ref={boxRef}
           // 캔버스 밖으로 나가면 라이브러리가 hover 해제를 알려주지 않아서 직접 해제
           onPointerLeave={() => setHoverId(null)}
-          className="relative min-w-0 flex-1 overflow-hidden rounded-xl border border-line"
+          className="relative h-[65svh] min-h-[360px] w-full min-w-0 shrink-0 touch-none overflow-hidden rounded-xl border border-line lg:h-auto lg:min-h-0 lg:w-auto lg:flex-1 lg:shrink"
           style={{
             background:
               "radial-gradient(ellipse at center, rgba(139,92,246,0.22) 0%, rgba(76,29,149,0.12) 38%, #0b0e14 78%)",
@@ -375,8 +419,8 @@ export default function GraphView({ graph: incoming, focus }) {
               }
               linkWidth={(link) => (activeSet && isLinkActive(link) ? 1.2 : 0.6)}
               onNodeHover={(node) => setHoverId(node ? node.id : null)}
-              onNodeClick={(node) => setSelectedId(node.id)}
-              onBackgroundClick={() => setSelectedId(null)}
+              onNodeClick={(node) => selectNode(node.id)}
+              onBackgroundClick={() => selectNode(null)}
               onEngineStop={() => setEngineDone(true)}
               // 배치는 첫 화면 전에 미리 계산하고, 화면에서는 거의 움직이지 않게
               warmupTicks={300}
@@ -388,13 +432,13 @@ export default function GraphView({ graph: incoming, focus }) {
           <button
             type="button"
             onClick={showAll}
-            className="absolute left-4 top-4 flex items-center gap-1.5 rounded-lg border border-line bg-bg/80 px-3 py-1.5 text-xs backdrop-blur transition-colors hover:border-accent hover:text-accent"
+            className="absolute left-4 top-4 flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-line bg-bg/80 px-3 py-1.5 text-xs backdrop-blur transition-colors hover:border-accent hover:text-accent"
           >
             <Maximize2 size={13} />
             전체 보기
           </button>
 
-          <span className="absolute bottom-4 left-4 rounded-lg border border-line bg-bg/80 px-3 py-1.5 font-mono text-xs text-muted backdrop-blur">
+          <span className="absolute bottom-4 left-4 whitespace-nowrap rounded-lg border border-line bg-bg/80 px-3 py-1.5 font-mono text-xs text-muted backdrop-blur">
             {focusSet ? (
               <>
                 depth <b className="text-text">{FOCUS_DEPTH}</b>
@@ -407,7 +451,14 @@ export default function GraphView({ graph: incoming, focus }) {
         </div>
 
         <NodePanel node={selectedNode} counts={counts} onGo={goToNode} />
+        {/* 좁은 화면: 종류별 개수는 그래프 아래 한 줄, 노드 정보는 바텀 시트 */}
+        <TypeCounts counts={counts} className="lg:hidden" />
       </div>
+      <NodeSheet
+        node={sheetOpen ? selectedNode : null}
+        onGo={goToNode}
+        onClose={closeSheet}
+      />
     </div>
   );
 }
