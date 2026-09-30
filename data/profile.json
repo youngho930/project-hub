@@ -1,0 +1,43 @@
+{
+  "name": "신영호",
+  "tagline": "현장의 반복 업무를 직접 찾아 자동화합니다",
+  "subline": "QC 1년 7개월 · Python · ERP 연동 · AI 에이전트",
+  "github": "https://github.com/youngho930",
+  "highlights": [
+    {
+      "value": "30초",
+      "label": "재고 확인 시간",
+      "detail": "이전 건당 1~2분",
+      "project": "inventory-dashboard"
+    },
+    {
+      "value": "8배",
+      "label": "엑셀 취합 속도",
+      "detail": "11분 42초 → 1분 27초 실측",
+      "project": "excel-merger"
+    },
+    {
+      "value": "6개월+",
+      "label": "무보수 운영",
+      "detail": "퇴사 후 유지보수 없이 사용 중",
+      "project": "inventory-dashboard"
+    }
+  ],
+  "stories": [
+    {
+      "title": "숫자를 의심한다",
+      "body": "주간 리포트가 실제 지원 2건을 47건으로 보고하던 오류를, 과거 메일을 같은 공식으로 재현해 원인을 확정하고 고쳤습니다.",
+      "project": "job-jarvis"
+    },
+    {
+      "title": "AI와 코드의 역할을 나눈다",
+      "body": "모델이 날짜 계산을 자주 틀려, 확실한 계산은 코드가 하고 애매한 판단만 모델에 맡기도록 설계를 바꿨습니다.",
+      "project": "jarvis"
+    },
+    {
+      "title": "쓰는 사람 입장에서 바꾼다",
+      "body": "엑셀은 누구나 수정할 수 있고 매번 다시 배포해야 해서, 재고 확인을 웹페이지로 전환했습니다.",
+      "project": "inventory-dashboard"
+    }
+  ]
+}

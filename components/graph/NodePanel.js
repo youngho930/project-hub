@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PreviewFrame from "@/components/PreviewFrame";
+import { ILLUSTRATIONS } from "@/components/illustrations";
 import { ArrowUpRight, Lock } from "lucide-react";
 import { Value } from "@/components/Value";
 import { TYPE_META, TYPE_ORDER } from "./types";
@@ -72,6 +73,16 @@ function Empty({ counts }) {
   );
 }
 
+// 캡처 이미지가 없는 프로젝트: 직접 그린 일러스트 (16:10)
+function ProjectIllustration({ id }) {
+  const Illustration = ILLUSTRATIONS[id];
+  return (
+    <div className="aspect-[16/10] overflow-hidden rounded-xl border border-line bg-inset">
+      <Illustration />
+    </div>
+  );
+}
+
 function Body({ node, onGo }) {
   switch (node.type) {
     case "project":
@@ -91,6 +102,9 @@ function Body({ node, onGo }) {
               sizes="272px"
               compact
             />
+          )}
+          {!node.preview && ILLUSTRATIONS[node.projectId] && (
+            <ProjectIllustration id={node.projectId} />
           )}
           <Link
             href={`/projects/${node.projectId}`}

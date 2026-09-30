@@ -6,7 +6,7 @@
   --color-inset: #0f131b;
   --color-line: #1f2533;
   --color-text: #e5e7eb;
-  --color-muted: #8b93a3;
+  --color-muted: #9aa2b1; /* 배경 #0b0e14 대비 7.5:1, 카드 #131823 대비 6.9:1 */
   --color-accent: #f59e0b;
   --color-orange: #f59e0b;
   --color-red: #ef4444;
@@ -19,6 +19,13 @@
 
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
@@ -43,6 +50,36 @@ body {
     border-radius: 12px;
     background: var(--color-card);
     padding: 24px;
+  }
+
+  /* 마우스를 올리면 살짝 떠오르고 테두리에 빛 번짐. 색은 --glow 로 지정 */
+  .glow-card {
+    --glow: #a78bfa;
+    transition:
+      transform 200ms ease,
+      border-color 200ms ease,
+      box-shadow 200ms ease;
+  }
+  .glow-card:hover,
+  .glow-card:focus-visible {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--glow) 55%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--glow) 18%, transparent),
+      0 18px 48px -20px var(--glow);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .glow-card:hover,
+    .glow-card:focus-visible {
+      transform: none;
+    }
+  }
+
+  /* 숫자 올라가는 움직임(CountUp): 움직임 허용 환경에서만 시작 전 숨김 */
+  @media (prefers-reduced-motion: no-preference) {
+    .count-up[data-count="pending"] {
+      opacity: 0;
+    }
   }
 
   /* 카드 안의 한 단계 어두운 칸 */

@@ -9,15 +9,16 @@ import {
   FolderOpen,
   GitBranch,
   LayoutGrid,
+  Gauge,
   Share2,
-  SquareKanban,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import StatusBadge from "./StatusBadge";
 
-// 연결 상태별 점 색 (Jira는 아직 연결 전이라 회색)
+// 연결 상태별 점 색
 const DOT_COLOR = {
   연결됨: "bg-green",
   오류: "bg-red",
@@ -51,6 +52,8 @@ export default function Sidebar({
   githubStatus = "미설정",
   calendarStatus = "미설정",
   pipelineStatus = "미설정",
+  open = false,
+  onClose,
 }) {
   const pathname = usePathname();
   const [closed, setClosed] = useState({});
@@ -59,20 +62,35 @@ export default function Sidebar({
     { name: "GitHub", Icon: GitBranch, status: githubStatus },
     { name: "Calendar", Icon: Calendar, status: calendarStatus },
     { name: "Job Jarvis", Icon: Briefcase, status: pipelineStatus },
-    { name: "Jira", Icon: SquareKanban, status: "연결 전" },
   ];
 
   const toggle = (name) =>
     setClosed((prev) => ({ ...prev, [name]: !prev[name] }));
 
   return (
-    <aside className="fixed inset-y-0 left-0 flex w-60 flex-col overflow-y-auto border-r border-line bg-bg px-4 py-5">
-      <Link href="/" className="mb-6 px-3 text-base font-bold tracking-tight">
-        Project Hub
-      </Link>
+    // 좁은 화면(lg 미만)에서는 왼쪽 밖에 숨어 있다가 open 이면 밀려 들어옴
+    <aside
+      id="sidebar"
+      className={`fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-y-auto border-r border-line bg-bg px-4 py-5 transition-transform duration-200 motion-reduce:transition-none lg:translate-x-0 ${
+        open ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
+      <div className="mb-6 flex items-center justify-between">
+        <Link href="/" className="px-3 text-base font-bold tracking-tight">
+          Project Hub
+        </Link>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="메뉴 닫기"
+          className="rounded-lg p-1.5 text-muted hover:bg-line/40 hover:text-text lg:hidden"
+        >
+          <X size={18} />
+        </button>
+      </div>
 
       <NavLink href="/" active={pathname === "/"} Icon={LayoutGrid}>
-        전체 보기
+        홈
       </NavLink>
       <NavLink
         href="/graph"
@@ -81,6 +99,14 @@ export default function Sidebar({
         className="mt-0.5"
       >
         지식 그래프
+      </NavLink>
+      <NavLink
+        href="/status"
+        active={pathname === "/status"}
+        Icon={Gauge}
+        className="mt-0.5"
+      >
+        관리
       </NavLink>
 
       <p className="label mt-7 mb-2 px-3">Projects</p>

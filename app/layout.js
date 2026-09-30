@@ -1,14 +1,13 @@
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
-import Topbar from "@/components/Topbar";
+import Shell from "@/components/Shell";
 import { getCalendarSummary } from "@/lib/calendar";
 import { getGitHubStatus } from "@/lib/github";
 import { getPipeline } from "@/lib/pipeline";
 import { getGroups } from "@/lib/projects";
 
 export const metadata = {
-  title: "Project Hub",
-  description: "포트폴리오 프로젝트 통합 관리",
+  title: "신영호 · Project Hub",
+  description: "현장의 반복 업무를 직접 찾아 자동화하는 신영호의 포트폴리오",
 };
 
 export default async function RootLayout({ children }) {
@@ -37,16 +36,17 @@ export default async function RootLayout({ children }) {
         />
       </head>
       <body className="antialiased">
-        <Sidebar
-          groups={groups}
-          githubStatus={githubStatus}
-          calendarStatus={calendar.status}
-          pipelineStatus={pipeline.status}
-        />
-        <div className="ml-60 min-h-screen">
-          <Topbar projectNames={projectNames} />
-          <main className="px-10 py-10">{children}</main>
-        </div>
+        <Shell
+          sidebar={{
+            groups,
+            githubStatus,
+            calendarStatus: calendar.status,
+            pipelineStatus: pipeline.status,
+          }}
+          projectNames={projectNames}
+        >
+          {children}
+        </Shell>
       </body>
     </html>
   );
