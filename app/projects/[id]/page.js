@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, Lock, Network } from "lucide-react";
 import RelativeTime from "@/components/RelativeTime";
+import StatusBadge from "@/components/StatusBadge";
 import { CheckBadge, Value } from "@/components/Value";
 import { GITHUB_STATUS, getRepoActivities, reposOf } from "@/lib/github";
 import { NEEDS_CHECK, getAllProjects, getProject } from "@/lib/projects";
@@ -215,8 +216,9 @@ export default async function ProjectPage({ params }) {
             Project <span className="mx-1 text-line">/</span>
             <span className="tracking-normal text-accent">{project.group}</span>
           </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+          <h1 className="mt-1 flex flex-wrap items-center gap-3 text-3xl font-bold tracking-tight">
             {project.name}
+            <StatusBadge status={project.status} className="text-xs" />
           </h1>
           {!isEmpty(project.summary) && (
             <p className="mt-2 text-muted">

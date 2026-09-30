@@ -14,7 +14,7 @@ export default async function RootLayout({ children }) {
   // 사이드바·상단 바에는 이름과 id만 넘김 (클라이언트로 보낼 데이터 최소화)
   const groups = getGroups().map((group) => ({
     name: group.name,
-    projects: group.projects.map(({ id, name }) => ({ id, name })),
+    projects: group.projects.map(({ id, name, status }) => ({ id, name, status })),
   }));
   const projectNames = Object.fromEntries(
     groups.flatMap((group) => group.projects.map((p) => [p.id, p.name]))

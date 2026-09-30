@@ -149,7 +149,7 @@ export default async function Home() {
         <section className="card">
           <h2 className="label">Completion</h2>
           <p className="mt-1 text-xs text-muted">
-            포트폴리오 완성도 (프로젝트당 {CHECKLIST_SIZE}개 항목)
+            포트폴리오 완성도 (프로젝트당 최대 {CHECKLIST_SIZE}개 항목, 진행 상태별 제외)
           </p>
           <div className="mt-5 flex items-center gap-8">
             <Donut percent={completion.percent} />

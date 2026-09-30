@@ -3,8 +3,9 @@
   "order": 5,
   "name": "Jira 주간보고 자동화",
   "group": "업무 자동화",
+  "status": "구상 중",
   "summary": "Jira 이슈를 REST API로 읽어 주간 업무 보고를 자동 생성",
-  "repo": "확인 필요",
+  "repo": "",
   "deploy": {
     "platform": "",
     "url": ""

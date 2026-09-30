@@ -1,0 +1,32 @@
+{
+  "id": "job-jarvis",
+  "order": 7,
+  "name": "Job Jarvis",
+  "group": "개인 AI 비서",
+  "summary": "고용24 API로 AI·자동화·품질 관련 공고를 매일 모으고, 마감 7일 안의 미지원 공고를 아침 9시에 메일로 알려주는 채용 알림 프로그램",
+  "repo": "youngho930/job-jarvis",
+  "deploy": {
+    "platform": "로컬 PC (윈도우 작업 스케줄러)",
+    "url": ""
+  },
+  "tech": [
+    "Python",
+    "Claude API",
+    "고용24 OpenAPI",
+    "SQLite",
+    "FastAPI",
+    "Streamlit"
+  ],
+  "problem": "확인 필요",
+  "decisions": [
+    {
+      "what": "확인 필요",
+      "why": "확인 필요",
+      "rejected": ""
+    }
+  ],
+  "results": [],
+  "related": [
+    "jarvis"
+  ]
+}

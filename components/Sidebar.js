@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import StatusBadge from "./StatusBadge";
 
 // 연결 상태별 점 색 (Jira는 아직 연결 전이라 회색)
 const DOT_COLOR = {
@@ -22,7 +23,7 @@ const DOT_COLOR = {
   미설정: "bg-muted/50",
 };
 
-function NavLink({ href, active, Icon, children, className = "" }) {
+function NavLink({ href, active, Icon, badge, children, className = "" }) {
   return (
     <Link
       href={href}
@@ -38,6 +39,7 @@ function NavLink({ href, active, Icon, children, className = "" }) {
       )}
       <Icon size={16} className={active ? "text-accent" : ""} />
       <span className="truncate">{children}</span>
+      {badge}
     </Link>
   );
 }
@@ -111,6 +113,7 @@ export default function Sidebar({
                           href={href}
                           active={pathname === href}
                           Icon={FileText}
+                          badge={<StatusBadge status={project.status} className="ml-auto" />}
                           className="pl-8"
                         >
                           {project.name}
