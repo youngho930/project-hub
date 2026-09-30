@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PreviewFrame from "@/components/PreviewFrame";
 import { ArrowUpRight, Lock } from "lucide-react";
 import { Value } from "@/components/Value";
 import { TYPE_META, TYPE_ORDER } from "./types";
@@ -80,6 +81,9 @@ function Body({ node, onGo }) {
             <Field label="Summary">
               <Value value={node.summary} />
             </Field>
+          )}
+          {node.preview && (
+            <PreviewFrame src={node.preview} label={node.name} sizes="272px" compact />
           )}
           <Link
             href={`/projects/${node.projectId}`}

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, Lock, Network } from "lucide-react";
+import PreviewFrame from "@/components/PreviewFrame";
 import RelativeTime from "@/components/RelativeTime";
 import StatusBadge from "@/components/StatusBadge";
 import { CheckBadge, Value } from "@/components/Value";
 import { GITHUB_STATUS, getRepoActivities, reposOf } from "@/lib/github";
+import { getPreview } from "@/lib/previews";
 import { NEEDS_CHECK, getAllProjects, getProject } from "@/lib/projects";
 
 const isEmpty = (value) =>
@@ -202,6 +204,9 @@ export default async function ProjectPage({ params }) {
   const github = await getRepoActivities();
   const isPrivate = (repo) => github.repos[repo]?.private === true;
   const hasRepos = reposOf(project).length > 0;
+  // public/previews/<id>.(png|jpg|webp) 가 있을 때만
+  const preview = getPreview(project.id);
+  const deployUrl = /^https?:\/\//.test(deploy.url ?? "") ? deploy.url : null;
 
   const allProjects = getAllProjects();
   const related = (project.related ?? [])
@@ -236,6 +241,24 @@ export default async function ProjectPage({ params }) {
       </header>
 
       <div className="mt-8 space-y-4">
+        {preview && (
+          <section>
+            <SectionLabel en="Preview" ko="미리보기" />
+            <div className="mt-3">
+              <PreviewFrame
+                src={preview.src}
+                url={deployUrl}
+                label={project.name}
+                sizes="(min-width: 1640px) 1400px, calc(100vw - 320px)"
+                eager
+              />
+              {preview.capturedAt && (
+                <p className="mt-2 text-xs text-muted">{preview.capturedAt} 캡처</p>
+              )}
+            </div>
+          </section>
+        )}
+
         {!isEmpty(project.results) && (
           <section>
             <SectionLabel en="Results" ko="효과" />
