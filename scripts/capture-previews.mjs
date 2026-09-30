@@ -6,7 +6,7 @@
 //       npm run capture -- jarvis          (특정 프로젝트만, 여러 개 가능)
 //       npm run capture -- jarvis --force  (직접 캡처한 이미지(manual: true)도 다시 찍기)
 //
-// 찍은 파일 이름과 날짜는 manifest.json 에 기록하고, 사이트는 manifest 에 있는 것만 표시한다.
+// 찍은 파일 이름·가로·세로 크기·날짜는 manifest.json 에 기록하고, 사이트는 manifest 에 있는 것만 표시한다.
 // manifest.json 에 manual: true 인 프로젝트는 직접 캡처한 이미지라 id 를 지정해도 건너뛴다.
 import fs from "node:fs";
 import path from "node:path";
@@ -73,6 +73,12 @@ async function wakeStreamlit(page) {
       .waitForSelector('[data-testid="stStatusWidget"]', { state: "detached", timeout: 15_000 })
       .catch(() => {});
   }
+}
+
+// PNG 머리(IHDR)에서 실제 가로·세로 크기를 읽는다
+function pngSize(file) {
+  const buf = fs.readFileSync(file);
+  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
 async function capture(browser, project) {
@@ -161,7 +167,11 @@ async function main() {
         const file = await withTimeout(capture(browser, project), budget, project.id);
         // 자동으로 다시 찍었으므로 manual 표시는 없앤다 (--force 로 덮어쓴 경우)
         // file: 화면은 이 이름으로 이미지를 찾는다 (manifest 에 없으면 미리보기를 숨김)
-        manifest[project.id] = { file: path.basename(file), capturedAt: kstDate() };
+        manifest[project.id] = {
+          file: path.basename(file),
+          ...pngSize(file), // 화면은 이 비율로 틀을 잡는다 (잘리지 않게)
+          capturedAt: kstDate(),
+        };
         ok.push(`${project.id} → ${path.relative(ROOT, file)}`);
       } catch (error) {
         failed.push(`${project.id}: ${error.message.split("\n")[0]}`);

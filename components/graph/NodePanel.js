@@ -83,7 +83,14 @@ function Body({ node, onGo }) {
             </Field>
           )}
           {node.preview && (
-            <PreviewFrame src={node.preview} label={node.name} sizes="272px" compact />
+            <PreviewFrame
+              src={node.preview.src}
+              width={node.preview.width}
+              height={node.preview.height}
+              label={node.name}
+              sizes="272px"
+              compact
+            />
           )}
           <Link
             href={`/projects/${node.projectId}`}

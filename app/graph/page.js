@@ -19,10 +19,13 @@ export default async function GraphPage({ searchParams }) {
       if (node.type === "part" && github.repos[node.repo]?.private) {
         return { ...node, repo: "", repoPrivate: true };
       }
-      // 프로젝트 노드: 미리보기 이미지가 있으면 경로만 추가
+      // 프로젝트 노드: 미리보기 이미지가 있으면 경로와 크기만 추가
       if (node.type === "project") {
         const preview = getPreview(node.projectId);
-        if (preview) return { ...node, preview: preview.src };
+        if (preview) {
+          const { src, width, height } = preview;
+          return { ...node, preview: { src, width, height } };
+        }
       }
       return node;
     }),

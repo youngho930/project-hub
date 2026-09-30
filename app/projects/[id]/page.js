@@ -247,6 +247,8 @@ export default async function ProjectPage({ params }) {
             <div className="mt-3">
               <PreviewFrame
                 src={preview.src}
+                width={preview.width}
+                height={preview.height}
                 url={deployUrl}
                 label={project.name}
                 sizes="(min-width: 1640px) 1400px, calc(100vw - 320px)"
