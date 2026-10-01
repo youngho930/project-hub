@@ -136,7 +136,8 @@ body {
 
 /* 첫 방문 화면 전체 도착 연출 (app/layout.js 의 <head> 스크립트, public/hero-intro.js).
    hub-cover: 첫 그림부터 화면 전체를 덮는 덮개(어두운 바탕 + 가장자리 어둡게)와 숨 쉬는 가운데 빛.
-              캔버스 연출이 완전히 나타나면(0.35초) 가려져 있던 이 덮개를 미리 뗌 (원이 열리는 순간의 일을 줄임)
+              캔버스 연출이 완전히 나타나면(0.35초) hub-cover-off 로 투명하게만 하고(합성 단계에서 처리돼
+              메인 스레드 일이 거의 없음), 실제로 떼는 건 연출이 끝날 때
    hub-intro: 연출 중 표시. 오른쪽 아래 "건너뛰기" 와 떠오를 글자 준비.
              메인 화면은 덮개 아래 그대로 그려져 있음. 캔버스 연출이 도착하면 그 위를 이어받음
    hub-reveal: 덮개가 걷힐 때 소개 문구가 PORTFOLIO → 이름 → 소개 문구 → 보조 문구 → 버튼 순서로
@@ -146,6 +147,7 @@ html.hub-cover body::before {
   position: fixed;
   inset: 0;
   z-index: 9998;
+  will-change: opacity;
   background:
     radial-gradient(circle at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.7) 100%),
     rgb(4, 6, 16);
@@ -173,6 +175,13 @@ html.hub-cover::before {
   pointer-events: none;
   will-change: transform, opacity;
   animation: hub-breathe 1.2s ease-in-out infinite;
+}
+html.hub-cover-off body::before {
+  opacity: 0;
+}
+html.hub-cover-off::before {
+  animation: none;
+  opacity: 0;
 }
 @keyframes hub-breathe {
   0%,

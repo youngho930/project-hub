@@ -346,76 +346,70 @@
 
       if (fade > 0.9) stats.shardsOnScreen.push(onScreen);
 
-      // 가운데 빛 덩어리와 큰 번짐
-      var core = tl.core;
-      if (core > 0) {
-        var cr = M * (0.05 + 0.1 * core);
-        var cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr * 5);
-        var vi = tl.violet || 0;
-        cg.addColorStop(0, rgba(mixColor([245, 255, 255], toWhite(HERO_VIOLET, 0.9), vi), Math.min(1, 0.95 * core + 0.2)));
-        cg.addColorStop(0.1, rgba(mixColor([165, 243, 252], toWhite(HERO_VIOLET, 0.45), vi), 0.8 * core));
-        cg.addColorStop(0.35, rgba(mixColor([34, 211, 238], HERO_VIOLET, vi), 0.25 * core));
-        cg.addColorStop(1, rgba(mixColor([59, 130, 246], HERO_VIOLET, vi), 0));
-        ctx.fillStyle = cg;
-        ctx.fillRect(cx - cr * 5, cy - cr * 5, cr * 10, cr * 10); // 빛이 닿는 곳만
-      }
-
-      // 섬광: 가운데는 하얗게 강렬하고 가장자리로 갈수록 빠르게 어두워지는 방사형
-      var f = tl.flash;
-      var v = tl.violet || 0;
-      if (f > 0) {
-        if (v < 1) {
-          ctx.globalAlpha = Math.min(1, f) * (1 - v);
-          ctx.drawImage(flashImg, 0, 0, w, h);
+      // 빛 층(가운데 빛·섬광·가로 플레어): 청록판·보라판을 투명도로 겹침, 가산 혼합
+      function drawLights() {
+        ctx.globalCompositeOperation = "lighter";
+        var core = tl.core;
+        if (core > 0) {
+          var cr = M * (0.05 + 0.1 * core);
+          var cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr * 5);
+          var vi = tl.violet || 0;
+          cg.addColorStop(0, rgba(mixColor([245, 255, 255], toWhite(HERO_VIOLET, 0.9), vi), Math.min(1, 0.95 * core + 0.2)));
+          cg.addColorStop(0.1, rgba(mixColor([165, 243, 252], toWhite(HERO_VIOLET, 0.45), vi), 0.8 * core));
+          cg.addColorStop(0.35, rgba(mixColor([34, 211, 238], HERO_VIOLET, vi), 0.25 * core));
+          cg.addColorStop(1, rgba(mixColor([59, 130, 246], HERO_VIOLET, vi), 0));
+          ctx.fillStyle = cg;
+          ctx.fillRect(cx - cr * 5, cy - cr * 5, cr * 10, cr * 10); // 빛이 닿는 곳만
         }
-        if (v > 0) {
-          ctx.globalAlpha = Math.min(1, f) * v;
-          ctx.drawImage(flashVioletImg, 0, 0, w, h);
-        }
-        ctx.globalAlpha = 1;
-      }
-      // 가로 렌즈 플레어: 소실점을 가로지르는 얇고 긴 빛줄기
-      var fl = tl.flare;
-      if (fl > 0) {
-        if (v < 1) {
-          ctx.globalAlpha = Math.min(1, fl) * (1 - v);
-          ctx.drawImage(flareImg, 0, cy - 7, w, 14);
-        }
-        if (v > 0) {
-          ctx.globalAlpha = Math.min(1, fl) * v;
-          ctx.drawImage(flareVioletImg, 0, cy - 7, w, 14);
-        }
-        ctx.globalAlpha = 1;
-      }
-
-      ctx.globalCompositeOperation = "source-over";
-      ctx.drawImage(vignette, 0, 0, w, h);
-
-      // 원형으로 열리는 전환: 가운데 빛에서 원이 퍼지며 오버레이에 구멍이 남 (흐리게 겹치는 중간 단계 없음)
-      var hole = tl.hole || 0;
-      if (hole > 0) {
-        var R = D * 1.1 * (0.5 - 0.5 * Math.cos(Math.PI * hole));
-        if (R > 0.5) {
-          ctx.globalCompositeOperation = "destination-out";
-          ctx.drawImage(holeImg, cx - R, cy - R, R * 2, R * 2);
-          // 원 가장자리의 보라빛 고리: 어두운 구멍이 아니라 빛이 열리는 느낌으로 (열릴수록 옅어짐)
-          var ring = 0.7 * (1 - hole);
-          if (ring > 0.02) {
-            var rc = toWhite(HERO_VIOLET, 0.35);
-            ctx.globalCompositeOperation = "lighter";
-            ctx.strokeStyle = rgba(rc, ring * 0.3);
-            ctx.lineWidth = Math.max(3, R * 0.08);
-            ctx.beginPath();
-            ctx.arc(cx, cy, R * 0.96, 0, 6.2832);
-            ctx.stroke();
-            ctx.strokeStyle = rgba(rc, ring);
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(cx, cy, R * 0.965, 0, 6.2832);
-            ctx.stroke();
+        // 섬광: 가운데는 하얗게 강렬하고 가장자리로 갈수록 빠르게 어두워지는 방사형
+        var f = tl.flash;
+        var v = tl.violet || 0;
+        if (f > 0) {
+          if (v < 1) {
+            ctx.globalAlpha = Math.min(1, f) * (1 - v);
+            ctx.drawImage(flashImg, 0, 0, w, h);
           }
+          if (v > 0) {
+            ctx.globalAlpha = Math.min(1, f) * v;
+            ctx.drawImage(flashVioletImg, 0, 0, w, h);
+          }
+          ctx.globalAlpha = 1;
+        }
+        // 가로 렌즈 플레어: 소실점을 가로지르는 얇고 긴 빛줄기
+        var fl = tl.flare;
+        if (fl > 0) {
+          if (v < 1) {
+            ctx.globalAlpha = Math.min(1, fl) * (1 - v);
+            ctx.drawImage(flareImg, 0, cy - 7, w, 14);
+          }
+          if (v > 0) {
+            ctx.globalAlpha = Math.min(1, fl) * v;
+            ctx.drawImage(flareVioletImg, 0, cy - 7, w, 14);
+          }
+          ctx.globalAlpha = 1;
+        }
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      var hole = tl.hole || 0;
+      if (hole <= 0) {
+        // 원이 열리기 전: 빛 → 가장자리 어둡게 (지금까지와 같은 순서)
+        drawLights();
+        ctx.drawImage(vignette, 0, 0, w, h);
+      } else {
+        // 원형으로 열리는 전환: 터널 층만 가운데에서 원이 퍼지듯 뚫리고(가장자리 부드럽게),
+        // 빛 층은 마스크 없이 그 위에 얹혀 투명도만 낮아지며 걷힘 → 메인 화면이 하얀·보라 빛 속에서 떠오름.
+        // 가장자리 어둡게는 맨 위에, 원이 열린 만큼 옅게
+        var Rh = D * 1.1 * (0.5 - 0.5 * Math.cos(Math.PI * hole));
+        if (Rh > 0.5) {
+          ctx.globalCompositeOperation = "destination-out";
+          ctx.drawImage(holeImg, cx - Rh, cy - Rh, Rh * 2, Rh * 2);
           ctx.globalCompositeOperation = "source-over";
         }
+        drawLights();
+        ctx.globalAlpha = 1 - hole;
+        ctx.drawImage(vignette, 0, 0, w, h);
+        ctx.globalAlpha = 1;
       }
       canvas.style.opacity = String(tl.opacity);
     }
@@ -492,15 +486,17 @@
   }
 
   // 도착 연출 흐름 (초): 0~1.25 점점 빨라짐 → 1.29 가장 밝음(짧게) → 1.28부터 청록에서 히어로 보라로
-  // → 1.30 가운데에서 원이 퍼지며 열리기 시작(글자 떠오름) → 1.80 다 열림 → 1.82 끝
+  // → 1.30 가운데에서 원이 퍼지며 터널 층이 열리기 시작(글자 떠오름), 섬광은 위에서 1.70까지 서서히 걷힘
+  // → 1.80 다 열림 → 1.82 끝 (건너뛰기 표시도 이때 함께 없어짐)
   var REVEAL_AT = 1.3;
   var OPEN_SEC = 0.5;
   function introTimeline(t) {
     var acc = clamp01(t / 1.25);
     return {
       speed: t < 1.25 ? 10 + 87 * Math.pow(acc, 1.8) : 97 * (1 - clamp01((t - 1.25) / 0.2)),
-      core: Math.min(1, 0.35 + 0.65 * Math.pow(acc, 1.5)) * (t < 1.32 ? 1 : 1 - clamp01((t - 1.32) / 0.14)),
-      flash: bell(t, 1.22, 1.29, 1.39),
+      core: Math.min(1, 0.35 + 0.65 * Math.pow(acc, 1.5)) * (t < 1.32 ? 1 : 1 - clamp01((t - 1.32) / 0.38)),
+      // 1.29 가장 밝음 → 원이 열리는 동안(1.30~1.70) 투명도만 낮아지며 걷힘
+      flash: t < 1.29 ? bell(t, 1.22, 1.29, 1.39) : 0.5 + 0.5 * Math.cos(Math.PI * clamp01((t - 1.29) / 0.41)),
       flare: 0.95 * bell(t, 1.2, 1.29, 1.4), // 원이 제목·숫자 영역에 닿기 전에 사라짐
       violet: clamp01((t - 1.28) / 0.12), // 섬광이 사라지기 전(1.40)에 다 옮겨 감
       hole: clamp01((t - REVEAL_AT) / OPEN_SEC),
@@ -544,10 +540,10 @@
       duration: REVEAL_AT + OPEN_SEC + 0.02,
       timeline: introTimeline,
       onTime: function (t) {
-        // 캔버스가 완전히 나타난 뒤에는 가려진 CSS 덮개를 미리 뗌 (원이 열리는 순간의 일을 줄임)
+        // 캔버스가 완전히 나타난 뒤에는 가려진 CSS 덮개를 투명하게만 함 (떼는 건 끝날 때, 원이 열릴 때 비치지 않게)
         if (t >= 0.35 && !coverOff) {
           coverOff = true;
-          document.documentElement.classList.remove("hub-cover");
+          document.documentElement.classList.add("hub-cover-off");
         }
         if (t >= REVEAL_AT) reveal();
       },

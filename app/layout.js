@@ -20,12 +20,13 @@ export const metadata = rootMetadata;
 // - public/hero-intro.js 를 async 로 불러와 캔버스 연출이 덮개를 이어받음 (첫 그림을 막지 않음)
 // - 클릭·터치·아무 키·휠 → 건너뛰기. 연출 파일이 2.5초 안에 시작 못 하면 덮개를 그냥 걷음
 //   (연출은 페이지 준비가 끝나 한가해질 때 시작하므로, 그 전까지는 덮개만 보임)
-// - 덮개가 걷힐 때 <html class="hub-reveal"> → 소개 문구가 차례로 떠오름 (globals.css)
+// - 원이 열리기 시작할 때 <html class="hub-reveal"> → 소개 문구가 차례로 떠오름 (globals.css).
+//   "건너뛰기" 표시(hub-intro)는 연출이 끝날 때 함께 없앰 (원이 열리는 순간의 일을 줄임)
 const ARRIVAL_SCRIPT = `try{var k="hub-visited",force=/[?&]intro(=|&|$)/.test(location.search),first=!localStorage.getItem(k);localStorage.setItem(k,"1");if((first||force)&&location.pathname==="/"&&!matchMedia("(prefers-reduced-motion: reduce)").matches){
 var d=document.documentElement,ended=0,revealed=0,ev=["pointerdown","keydown","wheel","touchstart"];
 d.classList.add("hub-intro","hub-cover");d.style.setProperty("--hub-skip-label",'"건너뛰기"');
-function reveal(){if(revealed)return;revealed=1;d.classList.remove("hub-intro","hub-cover");d.classList.add("hub-reveal");setTimeout(function(){d.classList.remove("hub-reveal")},1400)}
-function end(){if(ended)return;ended=1;reveal();ev.forEach(function(e){removeEventListener(e,skip,true)})}
+function reveal(){if(revealed)return;revealed=1;d.classList.add("hub-cover-off","hub-reveal");setTimeout(function(){d.classList.remove("hub-reveal")},1400)}
+function end(){if(ended)return;ended=1;reveal();d.classList.remove("hub-intro","hub-cover","hub-cover-off");ev.forEach(function(e){removeEventListener(e,skip,true)})}
 function skip(){if(window.__hubIntroSkip)window.__hubIntroSkip();else end()}
 window.__hubIntroReveal=reveal;window.__hubIntroEnd=end;
 ev.forEach(function(e){addEventListener(e,skip,{capture:true,passive:true})});
