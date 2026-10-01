@@ -47,6 +47,24 @@ const useHoverless = () =>
     () => false
   );
 
+// 움직임 줄이기 설정 (켜져 있으면 빛 흐름·등장 연출·별 움직임 모두 끔)
+const REDUCED = "(prefers-reduced-motion: reduce)";
+function subscribeReduced(callback) {
+  const query = window.matchMedia(REDUCED);
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+const useReducedMotion = () =>
+  useSyncExternalStore(
+    subscribeReduced,
+    () => window.matchMedia(REDUCED).matches,
+    () => false
+  );
+
+const INTRO_MS = 800; // 처음 열 때 노드가 나타나며 자리 잡는 시간 (가운데에서 바깥으로 번짐)
+const PULSE_MS = 6000; // 노드를 누른 뒤 연결선에 빛이 흐르는 시간
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+
 function withinDepth(startId, neighbors, depth) {
   const seen = new Set([startId]);
   let frontier = [startId];
@@ -82,6 +100,7 @@ export default function GraphView({ graph: incoming, focus }) {
   const [hoverId, setHoverId] = useState(null);
   const [engineDone, setEngineDone] = useState(false);
   const [fontTick, setFontTick] = useState(0);
+  const reducedMotion = useReducedMotion();
 
   // 전체 보기를 누르면 주소가 바뀌기 전에도 포커스를 바로 해제
   const [focusCleared, setFocusCleared] = useState(false);
@@ -210,24 +229,64 @@ export default function GraphView({ graph: incoming, focus }) {
     const timer = setTimeout(() => {
       const node = focusNodeId && nodeById.get(focusNodeId);
       if (node) {
-        fg.centerAt(node.x, node.y, 800);
-        fg.zoom(2.6, 800);
+        fg.centerAt(node.x, node.y, reducedMotion ? 0 : 800);
+        fg.zoom(2.6, reducedMotion ? 0 : 800);
       } else {
-        fg.zoomToFit(600, FIT_PADDING);
+        fg.zoomToFit(reducedMotion ? 0 : 600, FIT_PADDING);
       }
     }, 120);
     return () => clearTimeout(timer);
-  }, [engineDone, focusNodeId, nodeById, size.width, size.height]);
+  }, [engineDone, focusNodeId, nodeById, size.width, size.height, reducedMotion]);
+
+  // 등장 연출: 첫 그림부터 INTRO_MS 동안만 계속 다시 그림. 끝나면 가만히 있을 때 그리기를 멈춤
+  const introStart = useRef(null);
+  const [introDone, setIntroDone] = useState(false);
+  // 배치 계산이 끝난 시점(첫 그림 직후)부터 재서 연출이 끝나면 멈춤
+  useEffect(() => {
+    if (!engineDone || introDone) return;
+    const timer = setTimeout(() => setIntroDone(true), INTRO_MS + 200);
+    return () => clearTimeout(timer);
+  }, [engineDone, introDone]);
+  const intro = !reducedMotion && !introDone;
+  // 노드별 등장 진행도 (0~1): 그래프 중심에서 먼 노드일수록 조금 늦게
+  const introProgress = (node) => {
+    if (!intro) return 1;
+    const now = performance.now();
+    introStart.current ??= now;
+    const delay = Math.min(1, Math.hypot(node.x, node.y) / 500) * (INTRO_MS * 0.4);
+    return easeOut(Math.min(1, Math.max(0, (now - introStart.current - delay) / (INTRO_MS * 0.6))));
+  };
+  const introLinkAlpha = () => {
+    if (!intro || introStart.current === null) return intro ? 0 : 1;
+    return easeOut(Math.min(1, (performance.now() - introStart.current) / INTRO_MS));
+  };
+
+  // 그룹을 나눌 방향: 처음 크기 기준 (넓으면 좌우, 세로로 길면 위아래)
+  const [axis, setAxis] = useState(null);
+  if (axis === null && size.width > 0) setAxis(size.width >= size.height * 0.9 ? "x" : "y");
+
+  // 빛 흐름: 마우스를 올린 노드, 또는 누른 노드(PULSE_MS 동안)의 연결선에만
+  const [clickedId, setClickedId] = useState(null);
+  useEffect(() => {
+    if (!clickedId) return;
+    const timer = setTimeout(() => setClickedId(null), PULSE_MS);
+    return () => clearTimeout(timer);
+  }, [clickedId]);
+  // 터치 기기는 누른 뒤에도 라이브러리가 그 노드를 '올린 상태'로 잡고 있어서 누른 노드만 기준으로
+  const pulseId = reducedMotion ? null : ((hoverless ? null : hoverId) ?? clickedId);
+  const pulseColor = pulseId ? TYPE_META[nodeById.get(pulseId)?.type]?.color ?? "#ffffff" : "#ffffff";
 
   // 좁은 화면의 바텀 시트: 노드를 누르면 열림 (주소의 포커스로 처음 선택된 노드는 열지 않음)
   const [sheetOpen, setSheetOpen] = useState(false);
   const selectNode = (id) => {
     setSelectedId(id);
     setSheetOpen(id !== null);
+    setClickedId(id);
   };
   const closeSheet = () => {
     setSheetOpen(false);
     setSelectedId(null);
+    setClickedId(null);
   };
 
   const goToNode = useCallback(
@@ -242,21 +301,23 @@ export default function GraphView({ graph: incoming, focus }) {
       });
       setSelectedId(id);
       setSheetOpen(true);
-      fgRef.current?.centerAt(node.x, node.y, 600);
+      setClickedId(id);
+      fgRef.current?.centerAt(node.x, node.y, reducedMotion ? 0 : 600);
     },
-    [nodeById]
+    [nodeById, reducedMotion]
   );
 
   // 한 번에: 포커스·선택 해제, 주소의 ?focus 제거, 전체 노드 화면 맞춤
   const showAll = () => {
     setSelectedId(null);
     setSheetOpen(false);
+    setClickedId(null);
     setHoverId(null);
     if (focus) {
       setFocusCleared(true);
       router.replace("/graph", { scroll: false });
     }
-    fgRef.current?.zoomToFit(600, FIT_PADDING);
+    fgRef.current?.zoomToFit(reducedMotion ? 0 : 600, FIT_PADDING);
   };
 
   const toggleType = (type) =>
@@ -274,15 +335,17 @@ export default function GraphView({ graph: incoming, focus }) {
       const active = !activeSet || activeSet.has(node.id);
       const hovered = node.id === highlightId;
       const selected = node.id === selectedId;
+      const appear = introProgress(node);
+      if (appear <= 0) return;
 
       ctx.save();
-      ctx.globalAlpha = active ? 1 : 0.12;
+      ctx.globalAlpha = (active ? 1 : 0.12) * appear;
 
       // 빛 번짐
       ctx.shadowColor = color;
       ctx.shadowBlur = active ? (node.type === "project" ? 22 : 12) : 0;
       ctx.beginPath();
-      ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
+      ctx.arc(node.x, node.y, r * (0.4 + 0.6 * appear), 0, 2 * Math.PI);
       ctx.fillStyle = color;
       ctx.fill();
       ctx.shadowBlur = 0;
@@ -315,7 +378,7 @@ export default function GraphView({ graph: incoming, focus }) {
         ctx.font = `${labelWeight(node)} ${fontSize}px ${LABEL_FONT}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.globalAlpha = active ? (isProject || full ? 1 : 0.75) : 0.12;
+        ctx.globalAlpha = (active ? (isProject || full ? 1 : 0.75) : 0.12) * appear;
         ctx.fillStyle = "#e5e7eb";
         ctx.fillText(text, node.x, node.y + r + 3 / labelScale);
       }
@@ -324,7 +387,7 @@ export default function GraphView({ graph: incoming, focus }) {
     },
     // fontTick: 글꼴을 불러온 뒤 다시 그리기
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeSet, highlightId, selectedId, fontTick]
+    [activeSet, highlightId, selectedId, fontTick, intro]
   );
 
   const paintPointerArea = useCallback((node, color, ctx) => {
@@ -403,6 +466,8 @@ export default function GraphView({ graph: incoming, focus }) {
               width={size.width}
               height={size.height}
               graphData={data}
+              axis={axis ?? "x"}
+              reducedMotion={reducedMotion}
               backgroundColor="rgba(0,0,0,0)"
               nodeId="id"
               nodeLabel={() => ""}
@@ -412,22 +477,27 @@ export default function GraphView({ graph: incoming, focus }) {
               linkVisibility={(link) =>
                 isVisibleId(endId(link.source)) && isVisibleId(endId(link.target))
               }
-              linkColor={(link) =>
-                !activeSet
-                  ? "rgba(255,255,255,0.16)"
-                  : isLinkActive(link)
-                    ? "rgba(255,255,255,0.55)"
-                    : "rgba(255,255,255,0.035)"
-              }
+              linkColor={(link) => {
+                const alpha = !activeSet ? 0.16 : isLinkActive(link) ? 0.55 : 0.035;
+                return `rgba(255,255,255,${(alpha * introLinkAlpha()).toFixed(3)})`;
+              }}
               linkWidth={(link) => (activeSet && isLinkActive(link) ? 1.2 : 0.6)}
               onNodeHover={(node) => setHoverId(node ? node.id : null)}
               onNodeClick={(node) => selectNode(node.id)}
               onBackgroundClick={() => selectNode(null)}
               onEngineStop={() => setEngineDone(true)}
+              // 연결선 위 빛 알갱이: 상호작용한 노드에 바로 연결된 선에만
+              linkDirectionalParticles={(link) =>
+                pulseId && (endId(link.source) === pulseId || endId(link.target) === pulseId) ? 2 : 0
+              }
+              linkDirectionalParticleSpeed={0.006}
+              linkDirectionalParticleWidth={2.2}
+              linkDirectionalParticleColor={() => pulseColor}
               // 배치는 첫 화면 전에 미리 계산하고, 화면에서는 거의 움직이지 않게
               warmupTicks={300}
               cooldownTicks={15}
-              autoPauseRedraw={false}
+              // 가만히 있을 때는 다시 그리지 않음 (등장 연출 중에만 계속 그림, 빛 흐름 중에는 라이브러리가 알아서 그림)
+              autoPauseRedraw={!intro}
             />
           )}
 
