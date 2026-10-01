@@ -41,7 +41,7 @@ export default function PreviewFrame({
         {address && (
           <span
             className={`ml-2 min-w-0 flex-1 truncate rounded-md bg-inset text-muted ${
-              compact ? "px-1.5 text-[10px]" : "px-2.5 py-0.5 text-xs"
+              compact ? "px-1.5 text-label" : "px-2.5 py-0.5 text-caption"
             }`}
           >
             {address}

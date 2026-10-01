@@ -8,7 +8,7 @@ export default function StatusBadge({ status, className = "" }) {
   if (!STYLE[status]) return null;
   return (
     <span
-      className={`inline-block shrink-0 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold leading-none ${STYLE[status]} ${className}`}
+      className={`inline-block shrink-0 rounded-md border px-1.5 py-0.5 text-label font-semibold leading-none ${STYLE[status]} ${className}`}
     >
       {status}
     </span>

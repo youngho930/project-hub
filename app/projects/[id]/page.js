@@ -37,7 +37,7 @@ function SectionLabel({ en, ko }) {
   return (
     <h2 className="flex items-baseline gap-2">
       <span className="label">{en}</span>
-      <span className="text-xs text-muted/70">{ko}</span>
+      <span className="text-caption text-muted/70">{ko}</span>
     </h2>
   );
 }
@@ -59,7 +59,7 @@ function Tags({ items }) {
           {item === NEEDS_CHECK ? (
             <CheckBadge />
           ) : (
-            <span className="inline-block rounded-full border border-line bg-inset px-3 py-1 text-xs">
+            <span className="inline-block rounded-full border border-line bg-inset px-3 py-1 text-caption">
               {item}
             </span>
           )}
@@ -102,7 +102,7 @@ function RepoLink({ repo, isPrivate = false }) {
 
 function PrivateBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-md border border-line bg-inset px-1.5 py-0.5 text-[11px] text-muted">
+    <span className="inline-flex items-center gap-1 rounded-md border border-line bg-inset px-1.5 py-0.5 text-label text-muted">
       <Lock size={10} />
       비공개
     </span>
@@ -126,7 +126,7 @@ function LastActivity({ activity }) {
 
 function CommitList({ commits }) {
   if (isEmpty(commits)) {
-    return <p className="text-sm text-muted">커밋 없음</p>;
+    return <p className="text-body text-muted">커밋 없음</p>;
   }
   return (
     <ul className="divide-y divide-line">
@@ -137,13 +137,13 @@ function CommitList({ commits }) {
             href={commit.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group -mx-2 flex min-h-11 items-center gap-4 rounded-md px-2 py-2 text-sm transition-colors hover:bg-line/30"
+            className="group -mx-2 flex min-h-11 items-center gap-4 rounded-md px-2 py-2 text-body transition-colors hover:bg-line/30"
           >
             <span className="min-w-0 flex-1 truncate">{commit.message}</span>
-            <span className="shrink-0 text-xs text-muted">
+            <span className="shrink-0 text-caption text-muted">
               <RelativeTime iso={commit.date} />
             </span>
-            <span className="shrink-0 font-mono text-xs text-accent group-hover:underline">
+            <span className="shrink-0 font-mono text-caption text-accent group-hover:underline">
               {commit.sha}
             </span>
           </a>
@@ -156,7 +156,7 @@ function CommitList({ commits }) {
 // 최근 활동: parts가 있으면 부분별 한 줄씩, 없으면 저장소 하나 + 최근 커밋
 function Activity({ project, github }) {
   if (github.status !== GITHUB_STATUS.connected) {
-    return <p className="text-sm text-muted">GitHub 연결 안 됨</p>;
+    return <p className="text-body text-muted">GitHub 연결 안 됨</p>;
   }
 
   if (!isEmpty(project.parts)) {
@@ -177,7 +177,7 @@ function Activity({ project, github }) {
   const activity = github.repos[project.repo];
   return (
     <div className="space-y-4">
-      <div className="text-sm">
+      <div className="text-body">
         <LastActivity activity={activity} />
       </div>
       {activity?.ok && !activity.private && (
@@ -191,7 +191,7 @@ function Activity({ project, github }) {
 
 function Row({ label, children }) {
   return (
-    <div className="flex items-baseline gap-4 py-1.5 text-sm">
+    <div className="flex items-baseline gap-4 py-1.5 text-body">
       <dt className="label w-24 shrink-0">{label}</dt>
       <dd className="min-w-0">{children}</dd>
     </div>
@@ -228,9 +228,9 @@ export default async function ProjectPage({ params }) {
             Project <span className="mx-1 text-line">/</span>
             <span className="tracking-normal text-accent">{project.group}</span>
           </p>
-          <h1 className="mt-1 flex flex-wrap items-center gap-3 text-3xl font-bold tracking-tight">
+          <h1 className="mt-1 flex flex-wrap items-center gap-3 text-page font-bold tracking-tight">
             {project.name}
-            <StatusBadge status={project.status} className="text-xs" />
+            <StatusBadge status={project.status} className="text-caption" />
           </h1>
           {!isEmpty(project.summary) && (
             <p className="mt-2 text-muted">
@@ -240,14 +240,15 @@ export default async function ProjectPage({ params }) {
         </div>
         <Link
           href={`/graph?focus=${encodeURIComponent(project.id)}`}
-          className="flex min-h-11 shrink-0 items-center gap-2 rounded-lg border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-accent hover:text-accent"
+          className="flex min-h-11 shrink-0 items-center gap-2 rounded-lg border border-line bg-card px-4 py-2 text-body transition-colors hover:border-accent hover:text-accent"
         >
           <Network size={15} />
           그래프 보기
         </Link>
       </header>
 
-      <div className="mt-8 space-y-4">
+      {/* 섹션 사이 32px: 미리보기 / 효과 / 상세 카드 묶음. 카드 사이는 16px */}
+      <div className="mt-section space-y-section">
         {preview && (
           <section>
             <SectionLabel en="Preview" ko="미리보기" />
@@ -262,7 +263,7 @@ export default async function ProjectPage({ params }) {
                 eager
               />
               {preview.capturedAt && (
-                <p className="mt-2 text-xs text-muted">{preview.capturedAt} 캡처</p>
+                <p className="mt-2 text-caption text-muted">{preview.capturedAt} 캡처</p>
               )}
             </div>
           </section>
@@ -272,22 +273,22 @@ export default async function ProjectPage({ params }) {
           <section>
             <SectionLabel en="Results" ko="효과" />
             {/* 한 줄 3칸 고정: 카드가 1~2개여도 한 칸 폭만 차지 */}
-            <ul className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-3 grid grid-cols-1 gap-card md:grid-cols-2 lg:grid-cols-3">
               {project.results.map((result, i) => (
                 <li key={i} className="card">
-                  <p className="text-xs text-muted">
+                  <p className="text-caption text-muted">
                     <Value value={result.label} />
                   </p>
-                  <p className="mt-2 text-2xl font-bold leading-snug text-accent">
+                  <p className="mt-2 text-heading font-bold leading-snug text-accent">
                     <Value value={result.after} />
                   </p>
                   {!isEmpty(result.before) && (
-                    <p className="mt-2 text-xs text-muted">
+                    <p className="mt-2 text-caption text-muted">
                       이전: <Value value={result.before} />
                     </p>
                   )}
                   {!isEmpty(result.note) && (
-                    <p className="mt-1.5 text-xs text-muted">
+                    <p className="mt-1.5 text-caption text-muted">
                       <Value value={result.note} />
                     </p>
                   )}
@@ -297,125 +298,127 @@ export default async function ProjectPage({ params }) {
           </section>
         )}
 
-        {hasLinks && (
-          <Section en="Links" ko="링크">
-            <dl>
-              {!isEmpty(project.repo) && (
-                <Row label="Repo">
-                  <RepoLink repo={project.repo} isPrivate={isPrivate(project.repo)} />
-                </Row>
-              )}
-              {hasDeploy && (
-                <Row label="Deploy">
-                  <span className="flex flex-wrap items-center gap-2">
-                    {!isEmpty(deploy.platform) && (
-                      <Value value={deploy.platform} />
+        <div className="space-y-card">
+          {hasLinks && (
+            <Section en="Links" ko="링크">
+              <dl>
+                {!isEmpty(project.repo) && (
+                  <Row label="Repo">
+                    <RepoLink repo={project.repo} isPrivate={isPrivate(project.repo)} />
+                  </Row>
+                )}
+                {hasDeploy && (
+                  <Row label="Deploy">
+                    <span className="flex flex-wrap items-center gap-2">
+                      {!isEmpty(deploy.platform) && (
+                        <Value value={deploy.platform} />
+                      )}
+                      {!isEmpty(deploy.url) && (
+                        <Value value={deploy.url}>
+                          <ExternalLink href={deploy.url}>{deploy.url}</ExternalLink>
+                        </Value>
+                      )}
+                    </span>
+                  </Row>
+                )}
+              </dl>
+            </Section>
+          )}
+
+          {hasRepos && (
+            <Section en="Activity" ko="최근 활동">
+              <Activity project={project} github={github} />
+            </Section>
+          )}
+
+          {!isEmpty(project.tech) && (
+            <Section en="Stack" ko="기술">
+              <Tags items={project.tech} />
+            </Section>
+          )}
+
+          {!isEmpty(project.parts) && (
+            <Section en="Parts" ko="구성">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {project.parts.map((part) => (
+                  <div key={part.name} className="inset p-5">
+                    <h3 className="font-semibold">{part.name}</h3>
+                    {!isEmpty(part.repo) && (
+                      <p className="mt-1 text-body">
+                        <RepoLink repo={part.repo} isPrivate={isPrivate(part.repo)} />
+                      </p>
                     )}
-                    {!isEmpty(deploy.url) && (
-                      <Value value={deploy.url}>
-                        <ExternalLink href={deploy.url}>{deploy.url}</ExternalLink>
-                      </Value>
+                    {!isEmpty(part.tech) && (
+                      <div className="mt-3">
+                        <Tags items={part.tech} />
+                      </div>
                     )}
-                  </span>
-                </Row>
-              )}
-            </dl>
-          </Section>
-        )}
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
 
-        {hasRepos && (
-          <Section en="Activity" ko="최근 활동">
-            <Activity project={project} github={github} />
-          </Section>
-        )}
+          {!isEmpty(project.problem) && (
+            <Section en="Problem" ko="해결한 문제">
+              <p className="leading-relaxed">
+                <Value value={project.problem} />
+              </p>
+            </Section>
+          )}
 
-        {!isEmpty(project.tech) && (
-          <Section en="Stack" ko="기술">
-            <Tags items={project.tech} />
-          </Section>
-        )}
-
-        {!isEmpty(project.parts) && (
-          <Section en="Parts" ko="구성">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {project.parts.map((part) => (
-                <div key={part.name} className="inset p-5">
-                  <h3 className="font-semibold">{part.name}</h3>
-                  {!isEmpty(part.repo) && (
-                    <p className="mt-1 text-sm">
-                      <RepoLink repo={part.repo} isPrivate={isPrivate(part.repo)} />
-                    </p>
-                  )}
-                  {!isEmpty(part.tech) && (
-                    <div className="mt-3">
-                      <Tags items={part.tech} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {!isEmpty(project.problem) && (
-          <Section en="Problem" ko="해결한 문제">
-            <p className="leading-relaxed">
-              <Value value={project.problem} />
-            </p>
-          </Section>
-        )}
-
-        {!isEmpty(project.decisions) && (
-          <Section en="Decisions" ko="결정">
-            <ol className="space-y-3">
-              {project.decisions.map((decision, i) => (
-                // 검색 창에서 결정을 고르면 #decision-N 으로 이 카드까지 스크롤
-                <li
-                  key={i}
-                  id={`decision-${i + 1}`}
-                  className="inset scroll-mt-20 p-5 transition-colors target:border-accent/60 target:bg-accent/5"
-                >
-                  <dl>
-                    {!isEmpty(decision.what) && (
-                      <Row label="What">
-                        <span className="font-semibold">
-                          <Value value={decision.what} />
-                        </span>
-                      </Row>
-                    )}
-                    {!isEmpty(decision.why) && (
-                      <Row label="Why">
-                        <Value value={decision.why} />
-                      </Row>
-                    )}
-                    {!isEmpty(decision.rejected) && (
-                      <Row label="Rejected">
-                        <Value value={decision.rejected} />
-                      </Row>
-                    )}
-                  </dl>
-                </li>
-              ))}
-            </ol>
-          </Section>
-        )}
-
-        {!isEmpty(related) && (
-          <Section en="Related" ko="관련 프로젝트">
-            <ul className="flex flex-wrap gap-2">
-              {related.map((p) => (
-                <li key={p.id}>
-                  <Link
-                    href={`/projects/${p.id}`}
-                    className="inset inline-flex min-h-11 items-center px-3 py-1.5 text-sm hover:border-accent hover:text-accent"
+          {!isEmpty(project.decisions) && (
+            <Section en="Decisions" ko="결정">
+              <ol className="space-y-3">
+                {project.decisions.map((decision, i) => (
+                  // 검색 창에서 결정을 고르면 #decision-N 으로 이 카드까지 스크롤
+                  <li
+                    key={i}
+                    id={`decision-${i + 1}`}
+                    className="inset scroll-mt-20 p-5 transition-colors target:border-accent/60 target:bg-accent/5"
                   >
-                    {p.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Section>
-        )}
+                    <dl>
+                      {!isEmpty(decision.what) && (
+                        <Row label="What">
+                          <span className="font-semibold">
+                            <Value value={decision.what} />
+                          </span>
+                        </Row>
+                      )}
+                      {!isEmpty(decision.why) && (
+                        <Row label="Why">
+                          <Value value={decision.why} />
+                        </Row>
+                      )}
+                      {!isEmpty(decision.rejected) && (
+                        <Row label="Rejected">
+                          <Value value={decision.rejected} />
+                        </Row>
+                      )}
+                    </dl>
+                  </li>
+                ))}
+              </ol>
+            </Section>
+          )}
+
+          {!isEmpty(related) && (
+            <Section en="Related" ko="관련 프로젝트">
+              <ul className="flex flex-wrap gap-2">
+                {related.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={`/projects/${p.id}`}
+                      className="inset inline-flex min-h-11 items-center px-3 py-1.5 text-body hover:border-accent hover:text-accent"
+                    >
+                      {p.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+        </div>
       </div>
     </div>
   );

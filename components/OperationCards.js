@@ -30,7 +30,7 @@ function BarList({ items }) {
   return (
     <ul className="space-y-2.5">
       {items.map(({ label, Icon, color, count }) => (
-        <li key={label} className="flex items-center gap-3 text-sm">
+        <li key={label} className="flex items-center gap-3 text-body">
           <Icon size={14} className="shrink-0 text-muted" />
           <span className="w-12 shrink-0 text-muted">{label}</span>
           <span className="h-1 flex-1 overflow-hidden rounded-full bg-line">
@@ -54,7 +54,7 @@ function OperationCard({ label, total, caption, error, children }) {
         {total}
       </div>
       <div className="mt-4 flex-1">{children}</div>
-      <p className={`mt-4 text-xs ${error ? "text-red" : "text-muted"}`}>{caption}</p>
+      <p className={`mt-4 text-caption ${error ? "text-red" : "text-muted"}`}>{caption}</p>
     </section>
   );
 }
@@ -66,7 +66,7 @@ export function BoardCard({ calendar }) {
   return (
     <OperationCard
       label="Board"
-      total={<span className="text-xl font-bold tabular-nums">{sum}</span>}
+      total={<span className="text-title font-bold tabular-nums">{sum}</span>}
       caption={BOARD_CAPTION[calendar.status]}
       error={calendar.status === CALENDAR_STATUS.error}
     >
@@ -87,8 +87,8 @@ export function PipelineCard({ pipeline }) {
       // 단계끼리 겹치는 숫자라 합계 대신 지원 건수
       total={
         <span className="flex items-baseline gap-1">
-          <span className="text-xl font-bold tabular-nums">{pipeline.counts.applied}</span>
-          <span className="text-xs text-muted">지원</span>
+          <span className="text-title font-bold tabular-nums">{pipeline.counts.applied}</span>
+          <span className="text-caption text-muted">지원</span>
         </span>
       }
       error={pipeline.status === PIPELINE_STATUS.error}

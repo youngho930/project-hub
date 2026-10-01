@@ -2,7 +2,7 @@ const NEEDS_CHECK = "확인 필요";
 
 export function CheckBadge() {
   return (
-    <span className="inline-block rounded-md border border-yellow-400/40 bg-yellow-400/15 px-2 py-0.5 text-xs font-semibold text-yellow-300">
+    <span className="inline-block rounded-md border border-yellow-400/40 bg-yellow-400/15 px-2 py-0.5 text-caption font-semibold text-yellow-300">
       {NEEDS_CHECK}
     </span>
   );

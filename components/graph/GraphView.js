@@ -19,7 +19,7 @@ import {
 const ForceGraphCanvas = dynamic(() => import("./ForceGraphCanvas"), {
   ssr: false,
   loading: () => (
-    <p className="absolute inset-0 grid place-items-center text-sm text-muted">
+    <p className="absolute inset-0 grid place-items-center text-body text-muted">
       그래프 불러오는 중…
     </p>
   ),
@@ -343,9 +343,9 @@ export default function GraphView({ graph: incoming, focus }) {
       <header className="flex shrink-0 flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 max-w-full">
           <p className="label">Graph</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">지식 그래프</h1>
+          <h1 className="mt-1 text-page font-bold tracking-tight">지식 그래프</h1>
           {/* 좁은 화면: 넘치면 가로 스크롤 한 줄, 누르는 영역 44px / 넓은 화면: 지금처럼 */}
-          <ul className="mt-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 text-sm max-lg:[scrollbar-width:none] lg:flex-wrap lg:overflow-visible">
+          <ul className="mt-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 text-body max-lg:[scrollbar-width:none] lg:flex-wrap lg:overflow-visible">
             {TYPE_ORDER.map((type) => {
               const off = hidden.has(type);
               const { color, label } = TYPE_META[type];
@@ -374,7 +374,7 @@ export default function GraphView({ graph: incoming, focus }) {
             })}
           </ul>
         </div>
-        <span className="flex items-center gap-2 rounded-full border border-line bg-card px-3.5 py-1.5 text-sm">
+        <span className="flex items-center gap-2 rounded-full border border-line bg-card px-3.5 py-1.5 text-body">
           <span
             className="size-2 rounded-full"
             style={{
@@ -386,7 +386,7 @@ export default function GraphView({ graph: incoming, focus }) {
         </span>
       </header>
 
-      <div className="mt-5 flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+      <div className="mt-section flex min-h-0 flex-1 flex-col gap-card lg:flex-row">
         <div
           ref={boxRef}
           // 캔버스 밖으로 나가면 라이브러리가 hover 해제를 알려주지 않아서 직접 해제
@@ -434,13 +434,13 @@ export default function GraphView({ graph: incoming, focus }) {
           <button
             type="button"
             onClick={showAll}
-            className="absolute left-4 top-4 flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg lg:min-h-0 border border-line bg-bg/80 px-3 py-1.5 text-xs backdrop-blur transition-colors hover:border-accent hover:text-accent"
+            className="absolute left-4 top-4 flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg lg:min-h-0 border border-line bg-bg/80 px-3 py-1.5 text-caption backdrop-blur transition-colors hover:border-accent hover:text-accent"
           >
             <Maximize2 size={13} />
             전체 보기
           </button>
 
-          <span className="absolute bottom-4 left-4 whitespace-nowrap rounded-lg border border-line bg-bg/80 px-3 py-1.5 font-mono text-xs text-muted backdrop-blur">
+          <span className="absolute bottom-4 left-4 whitespace-nowrap rounded-lg border border-line bg-bg/80 px-3 py-1.5 font-mono text-caption text-muted backdrop-blur">
             {focusSet ? (
               <>
                 depth <b className="text-text">{FOCUS_DEPTH}</b>

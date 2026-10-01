@@ -12,6 +12,32 @@
   --color-red: #ef4444;
   --color-green: #22c55e;
   --color-blue: #3b82f6;
+
+  /* 글자 크기 단계 (Tailwind 기본 크기는 끄고 아래 이름만 씀: text-label, text-caption …) */
+  --text-*: initial;
+  --text-label: 11px; /* 작은 영문 라벨, 배지, 태그, 단축키 */
+  --text-label--line-height: 16px;
+  --text-caption: 12px; /* 보조 글씨: 날짜, 출처, 설명 한 줄 */
+  --text-caption--line-height: 16px;
+  --text-body: 14px; /* 본문, 버튼, 목록 */
+  --text-body--line-height: 20px;
+  --text-input: 16px; /* 예외: 입력칸 (휴대폰에서 16px 미만이면 화면이 확대됨) */
+  --text-input--line-height: 24px;
+  --text-title: 18px; /* 카드 제목, 로고, 작은 숫자 */
+  --text-title--line-height: 28px;
+  --text-heading: 24px; /* 섹션 제목, 카드 안 큰 값 */
+  --text-heading--line-height: 32px;
+  --text-page: 30px; /* 페이지 제목 (좁은 화면의 큰 숫자·소개 문구) */
+  --text-page--line-height: 36px;
+  --text-display: 48px; /* 대표 숫자 */
+  --text-display--line-height: 1;
+  --text-hero: 56px; /* 첫 화면 소개 문구 (넓은 화면) */
+  --text-hero--line-height: 1.15;
+
+  /* 간격 단계: 카드 사이 16px, 섹션 사이 32px (첫 화면은 섹션 사이를 넓게 따로 씀) */
+  --spacing-card: 16px;
+  --spacing-section: 32px;
+
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, system-ui, "Segoe UI", "Malgun Gothic",
     "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
@@ -32,13 +58,14 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
+  font-size: var(--text-body);
   word-break: keep-all;
 }
 
 @layer components {
   /* 섹션 라벨: 작은 대문자 영문 + 넓은 글자 간격 */
   .label {
-    font-size: 11px;
+    font-size: var(--text-label);
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;

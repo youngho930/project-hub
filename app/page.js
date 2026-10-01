@@ -46,7 +46,7 @@ function SectionHead({ label, title, aside, id }) {
     <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
       <div>
         <p className="label text-accent/90">{label}</p>
-        <h2 id={id} className="mt-1.5 text-xl font-bold tracking-tight sm:text-2xl">
+        <h2 id={id} className="mt-1.5 text-heading font-bold tracking-tight">
           {title}
         </h2>
       </div>
@@ -145,7 +145,7 @@ function ProjectCard({ project }) {
         ) : (
           <span className="absolute inset-0 grid place-items-center">
             <span
-              className="rounded-full border px-3 py-1 text-[11px] font-semibold tracking-[0.18em] uppercase"
+              className="rounded-full border px-3 py-1 text-label font-semibold tracking-[0.18em] uppercase"
               style={{ borderColor: `${color}55`, color, background: `${color}14` }}
             >
               {project.group}
@@ -167,17 +167,17 @@ function ProjectCard({ project }) {
 
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className={`font-bold tracking-tight ${wide ? "text-lg" : "text-base"}`}>
+          <h3 className="text-title font-bold tracking-tight">
             {project.name}
           </h3>
           <StatusBadge status={project.status} className="mt-0.5" />
         </div>
         {/* 최대 2줄, 단어 단위로 줄이고 말줄임 */}
-        <ClampWords text={project.summary} className="mt-1.5 text-sm leading-relaxed text-muted" />
+        <ClampWords text={project.summary} className="mt-1.5 text-body leading-relaxed text-muted" />
 
         {effect && (
-          <p className="mt-4 flex items-baseline gap-2 text-sm">
-            <span className="shrink-0 text-xs text-muted">{effect.label}</span>
+          <p className="mt-4 flex items-baseline gap-2 text-body">
+            <span className="shrink-0 text-caption text-muted">{effect.label}</span>
             <span className="font-semibold" style={{ color }}>
               {effect.text}
             </span>
@@ -189,7 +189,7 @@ function ProjectCard({ project }) {
             {tech.map((t) => (
               <li
                 key={t}
-                className="rounded-md border border-line bg-inset px-2 py-0.5 text-[11px] text-muted"
+                className="rounded-md border border-line bg-inset px-2 py-0.5 text-label text-muted"
               >
                 {t}
               </li>
@@ -248,19 +248,19 @@ export default async function Home() {
               <span className="size-1.5 rounded-full bg-accent shadow-[0_0_10px_#f59e0b]" />
               Portfolio
             </p>
-            <p className="mt-5 text-base font-semibold text-text/80 sm:text-lg">{profile.name}</p>
+            <p className="mt-5 text-title font-semibold text-text/80">{profile.name}</p>
             <h1
               id="intro-title"
-              className="mt-2 text-[2rem] leading-[1.2] font-bold tracking-tight sm:text-5xl lg:text-[3.5rem] lg:leading-[1.15]"
+              className="mt-2 text-page leading-[1.2] font-bold tracking-tight sm:text-display lg:text-hero lg:leading-[1.15]"
             >
               {profile.tagline}
             </h1>
-            <p className="mt-5 text-sm text-muted sm:text-base">{profile.subline}</p>
+            <p className="mt-5 text-body text-muted">{profile.subline}</p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <a
                 href="#projects"
-                className="flex items-center gap-2 rounded-xl bg-accent min-h-11 px-5 py-2.5 text-sm font-semibold text-bg shadow-[0_8px_30px_-8px_#f59e0b] transition hover:brightness-110"
+                className="flex items-center gap-2 rounded-xl bg-accent min-h-11 px-5 py-2.5 text-body font-semibold text-bg shadow-[0_8px_30px_-8px_#f59e0b] transition hover:brightness-110"
               >
                 프로젝트 보기
                 <ArrowDown size={15} />
@@ -269,7 +269,7 @@ export default async function Home() {
                 href={profile.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl border border-line bg-bg/60 min-h-11 px-5 py-2.5 text-sm font-semibold backdrop-blur transition-colors hover:border-text/30"
+                className="flex items-center gap-2 rounded-xl border border-line bg-bg/60 min-h-11 px-5 py-2.5 text-body font-semibold backdrop-blur transition-colors hover:border-text/30"
               >
                 <GitHubMark size={15} />
                 GitHub
@@ -287,14 +287,14 @@ export default async function Home() {
               </span>
               Live
             </p>
-            <ul className="mt-3 space-y-2 text-sm">
+            <ul className="mt-3 space-y-2 text-body">
               {sources.map(({ name, status }) => (
                 <li key={name} className="flex items-center gap-2.5">
                   <span
                     className={`size-1.5 shrink-0 rounded-full ${DOT_COLOR[status] ?? "bg-muted/50"}`}
                   />
                   <span>{name}</span>
-                  <span className="ml-auto text-xs text-muted">{status}</span>
+                  <span className="ml-auto text-caption text-muted">{status}</span>
                 </li>
               ))}
             </ul>
@@ -323,12 +323,12 @@ export default async function Home() {
                 />
                 <CountUp
                   value={item.value}
-                  className="w-[6.5rem] shrink-0 bg-gradient-to-br from-amber-200 to-amber-500 bg-clip-text text-[2rem] leading-none font-bold tracking-tight text-transparent sm:w-auto sm:text-5xl sm:leading-tight"
+                  className="w-[6.5rem] shrink-0 bg-gradient-to-br from-amber-200 to-amber-500 bg-clip-text text-page leading-none font-bold tracking-tight text-transparent sm:w-auto sm:text-display sm:leading-tight"
                 />
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-sm font-semibold sm:mt-3">{item.label}</span>
-                  <span className="mt-0.5 text-xs text-muted sm:mt-1">{item.detail}</span>
-                  <span className="mt-4 hidden items-center gap-1 text-xs text-muted transition-colors group-hover:text-accent sm:flex">
+                  <span className="text-body font-semibold sm:mt-3">{item.label}</span>
+                  <span className="mt-0.5 text-caption text-muted sm:mt-1">{item.detail}</span>
+                  <span className="mt-4 hidden items-center gap-1 text-caption text-muted transition-colors group-hover:text-accent sm:flex">
                     {nameOf[item.project] ?? item.project}
                     <ArrowRight size={12} />
                   </span>
@@ -346,7 +346,7 @@ export default async function Home() {
           id="projects"
           label="Projects"
           title="만든 것들"
-          aside={<p className="text-sm text-muted">{projects.length}개 프로젝트</p>}
+          aside={<p className="text-body text-muted">{projects.length}개 프로젝트</p>}
         />
         <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {arrange(projects).map((project) => (
@@ -365,10 +365,10 @@ export default async function Home() {
                 href={`/projects/${story.project}`}
                 className="glow-card group flex h-full flex-col rounded-2xl border border-line bg-card p-6"
               >
-                <span className="font-mono text-xs text-accent/80">0{i + 1}</span>
-                <h3 className="mt-3 text-lg font-bold tracking-tight">{story.title}</h3>
-                <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">{story.body}</p>
-                <span className="mt-5 flex items-center gap-1 text-xs text-muted transition-colors group-hover:text-[#a78bfa]">
+                <span className="font-mono text-caption text-accent/80">0{i + 1}</span>
+                <h3 className="mt-3 text-title font-bold tracking-tight">{story.title}</h3>
+                <p className="mt-3 flex-1 text-body leading-relaxed text-muted">{story.body}</p>
+                <span className="mt-5 flex items-center gap-1 text-caption text-muted transition-colors group-hover:text-[#a78bfa]">
                   {nameOf[story.project] ?? story.project}
                   <ArrowRight size={12} />
                 </span>
@@ -391,7 +391,7 @@ export default async function Home() {
           <GraphTeaser graph={graph} />
           <div className="w-full">
             <SectionHead id="graph-title" label="Knowledge graph" title="프로젝트가 서로 어떻게 이어지는지" />
-            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">
+            <p className="mt-3 max-w-md text-body leading-relaxed text-muted">
               프로젝트마다 쓴 기술, 내린 결정, 만든 효과를 노드로 연결했습니다. 같은 기술을 쓴
               프로젝트끼리 자연스럽게 묶입니다.
             </p>
@@ -402,17 +402,17 @@ export default async function Home() {
                 ["decision", "결정"],
               ].map(([type, label]) => (
                 <div key={type} className="inset px-4 py-3">
-                  <dt className="flex items-center gap-1.5 text-xs text-muted">
+                  <dt className="flex items-center gap-1.5 text-caption text-muted">
                     <span className="size-1.5 rounded-full" style={{ background: TYPE_META[type].color }} />
                     {label}
                   </dt>
-                  <dd className="mt-1 text-2xl font-bold tabular-nums">{countOf(type)}</dd>
+                  <dd className="mt-1 text-heading font-bold tabular-nums">{countOf(type)}</dd>
                 </div>
               ))}
             </dl>
             <Link
               href="/graph"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[#a78bfa]/40 bg-[#a78bfa]/10 min-h-11 px-5 py-2.5 text-sm font-semibold text-[#c4b5fd] transition-colors hover:bg-[#a78bfa]/20"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[#a78bfa]/40 bg-[#a78bfa]/10 min-h-11 px-5 py-2.5 text-body font-semibold text-[#c4b5fd] transition-colors hover:bg-[#a78bfa]/20"
             >
               <Share2 size={15} />
               지식 그래프 보기
@@ -428,7 +428,7 @@ export default async function Home() {
           label="Live operations"
           title="운영 현황"
           aside={
-            <p className="flex items-center gap-2 text-sm text-muted">
+            <p className="flex items-center gap-2 text-body text-muted">
               <span className="size-1.5 rounded-full bg-green shadow-[0_0_8px_#22c55e]" />이 사이트는
               실제로 운영 중입니다
             </p>
@@ -450,20 +450,20 @@ export default async function Home() {
         }}
       >
         <p className="label text-accent/90">Contact</p>
-        <h2 id="contact-title" className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+        <h2 id="contact-title" className="mt-2 text-heading font-bold tracking-tight sm:text-page">
           이야기 나눠요
         </h2>
-        <p className="mt-3 text-sm text-muted">프로젝트나 채용 관련 문의는 이메일로 편하게 보내 주세요.</p>
+        <p className="mt-3 text-body text-muted">프로젝트나 채용 관련 문의는 이메일로 편하게 보내 주세요.</p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <CopyEmail
             parts={profile.emailParts}
-            className="flex items-center gap-2 rounded-xl bg-accent min-h-11 px-5 py-2.5 text-sm font-semibold text-bg transition hover:brightness-110"
+            className="flex items-center gap-2 rounded-xl bg-accent min-h-11 px-5 py-2.5 text-body font-semibold text-bg transition hover:brightness-110"
           />
           <a
             href={profile.github}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-xl border border-line bg-bg/60 min-h-11 px-5 py-2.5 text-sm font-semibold transition-colors hover:border-text/30"
+            className="flex items-center gap-2 rounded-xl border border-line bg-bg/60 min-h-11 px-5 py-2.5 text-body font-semibold transition-colors hover:border-text/30"
           >
             <GitHubMark size={15} />
             GitHub

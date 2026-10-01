@@ -54,7 +54,7 @@ function Donut({ percent }) {
         fontWeight="700"
       >
         {percent}
-        <tspan fontSize="16" fill="var(--color-muted)" dx="2">
+        <tspan fontSize="14" fill="var(--color-muted)" dx="2">
           %
         </tspan>
       </text>
@@ -71,14 +71,14 @@ export default function StatusPage() {
     <div className="mx-auto max-w-[1400px]">
       <header>
         <p className="label">Status</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight">관리</h1>
-        <p className="mt-2 text-sm text-muted">포트폴리오 내용이 얼마나 채워졌는지 확인합니다.</p>
+        <h1 className="mt-1 text-page font-bold tracking-tight">관리</h1>
+        <p className="mt-2 text-body text-muted">포트폴리오 내용이 얼마나 채워졌는지 확인합니다.</p>
       </header>
 
-      <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="mt-section grid grid-cols-1 gap-card lg:grid-cols-2">
         <section className="card">
           <h2 className="label">Completion</h2>
-          <p className="mt-1 text-xs text-muted">
+          <p className="mt-1 text-caption text-muted">
             포트폴리오 완성도 (프로젝트당 최대 {CHECKLIST_SIZE}개 항목, 진행 상태별 제외)
           </p>
           <div className="mt-5 flex items-center gap-8">
@@ -86,11 +86,11 @@ export default function StatusPage() {
             <dl className="space-y-3">
               <div>
                 <dt className="label">Done</dt>
-                <dd className="text-2xl font-bold">{completion.done}</dd>
+                <dd className="text-heading font-bold">{completion.done}</dd>
               </div>
               <div>
                 <dt className="label">Left</dt>
-                <dd className="text-2xl font-bold text-red">{completion.left}</dd>
+                <dd className="text-heading font-bold text-red">{completion.left}</dd>
               </div>
             </dl>
           </div>
@@ -100,26 +100,26 @@ export default function StatusPage() {
           <h2 className="flex items-center gap-2">
             <span className="label">Missed</span>
             <AlertTriangle size={15} className="text-red" />
-            <span className="text-xl font-bold text-red">{completion.left}</span>
+            <span className="text-title font-bold text-red">{completion.left}</span>
           </h2>
-          <p className="mt-1 text-xs text-muted">포트폴리오에 채워야 할 항목</p>
+          <p className="mt-1 text-caption text-muted">포트폴리오에 채워야 할 항목</p>
           {missed.length === 0 ? (
-            <p className="mt-6 text-sm text-muted">모두 채워졌습니다</p>
+            <p className="mt-6 text-body text-muted">모두 채워졌습니다</p>
           ) : (
             <ul className="mt-5 space-y-2">
               {missed.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={`/projects/${item.id}`}
-                    className="inset flex items-center gap-3 border-l-2 border-l-red/70 px-4 py-2.5 text-sm transition-colors hover:border-line hover:border-l-red hover:bg-line/40"
+                    className="inset flex items-center gap-3 border-l-2 border-l-red/70 px-4 py-2.5 text-body transition-colors hover:border-line hover:border-l-red hover:bg-line/40"
                   >
                     <span className="min-w-0">
                       <span className="block truncate">{item.name}</span>
-                      <span className="mt-0.5 block text-xs text-muted">
+                      <span className="mt-0.5 block text-caption text-muted">
                         {item.missing.join(", ")}
                       </span>
                     </span>
-                    <span className="ml-auto shrink-0 rounded-md border border-red/40 bg-red/10 px-2 py-0.5 text-xs font-semibold text-red">
+                    <span className="ml-auto shrink-0 rounded-md border border-red/40 bg-red/10 px-2 py-0.5 text-caption font-semibold text-red">
                       {item.missing.length}개 부족
                     </span>
                     <ChevronRight size={14} className="shrink-0 text-muted" />

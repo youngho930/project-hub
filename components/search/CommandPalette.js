@@ -86,19 +86,19 @@ function ResultRow({ result, active, id, onPick, onHover }) {
     >
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-sm font-semibold">
+          <span className="truncate text-body font-semibold">
             <Highlight text={result.title} match={result.titleMatch} />
           </span>
           {kind === "projects" && <StatusBadge status={item.status} />}
           {kind === "projects" && item.group && (
-            <span className="shrink-0 text-[11px] text-muted">{item.group}</span>
+            <span className="shrink-0 text-label text-muted">{item.group}</span>
           )}
           {kind === "decisions" && (
-            <span className="shrink-0 text-[11px] text-muted">{item.project}</span>
+            <span className="shrink-0 text-label text-muted">{item.project}</span>
           )}
         </div>
         {sub && (
-          <p className="mt-0.5 line-clamp-1 text-xs text-muted">
+          <p className="mt-0.5 line-clamp-1 text-caption text-muted">
             {kind === "tech" && <span className="text-muted/80">사용 · </span>}
             <Highlight text={sub.text} match={sub.match} />
           </p>
@@ -213,7 +213,7 @@ export default function CommandPalette({ open, onClose, index }) {
             placeholder="프로젝트, 기술, 결정 검색 (초성도 돼요)"
             autoComplete="off"
             spellCheck={false}
-            className="h-14 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted/70"
+            className="h-14 min-w-0 flex-1 bg-transparent text-input outline-none placeholder:text-muted/70"
           />
           <button
             type="button"
@@ -222,7 +222,7 @@ export default function CommandPalette({ open, onClose, index }) {
             className="flex size-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-line/50 hover:text-text focus-visible:outline-2 focus-visible:outline-accent sm:size-auto sm:px-2 sm:py-1"
           >
             <X size={18} className="sm:hidden" />
-            <kbd className="hidden rounded border border-line bg-inset px-1.5 py-0.5 font-sans text-[11px] sm:inline">Esc</kbd>
+            <kbd className="hidden rounded border border-line bg-inset px-1.5 py-0.5 font-sans text-label sm:inline">Esc</kbd>
           </button>
         </div>
 
@@ -230,7 +230,7 @@ export default function CommandPalette({ open, onClose, index }) {
           {flat.length === 0 ? (
             <div className="px-4 py-12 text-center">
               <p className="font-semibold">찾는 결과가 없어요</p>
-              <p className="mt-2 text-sm text-muted">이런 검색어는 어떠세요?</p>
+              <p className="mt-2 text-body text-muted">이런 검색어는 어떠세요?</p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {EXAMPLES.map((example) => (
                   <button
@@ -241,7 +241,7 @@ export default function CommandPalette({ open, onClose, index }) {
                       setActive(0);
                       inputRef.current?.focus();
                     }}
-                    className="min-h-11 rounded-lg border border-line bg-inset px-3 text-sm text-muted hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-accent sm:min-h-0 sm:py-1.5"
+                    className="min-h-11 rounded-lg border border-line bg-inset px-3 text-body text-muted hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-accent sm:min-h-0 sm:py-1.5"
                   >
                     {example}
                   </button>
@@ -277,7 +277,7 @@ export default function CommandPalette({ open, onClose, index }) {
           )}
         </div>
 
-        <div className="hidden shrink-0 items-center gap-4 border-t border-line px-4 py-2.5 text-[11px] text-muted sm:flex">
+        <div className="hidden shrink-0 items-center gap-4 border-t border-line px-4 py-2.5 text-label text-muted sm:flex">
           <span><kbd className="font-sans">↑</kbd> <kbd className="font-sans">↓</kbd> 이동</span>
           <span><kbd className="font-sans">Enter</kbd> 열기</span>
           <span><kbd className="font-sans">Esc</kbd> 닫기</span>

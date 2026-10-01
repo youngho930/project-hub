@@ -31,7 +31,7 @@ function NavLink({ href, active, Icon, badge, children, className = "" }) {
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+      className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-body transition-colors ${
         active
           ? "bg-line/70 font-semibold text-text"
           : "text-muted hover:bg-line/40 hover:text-text"
@@ -107,14 +107,14 @@ export default function Sidebar({
       }`}
     >
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="px-3 text-base font-bold tracking-tight">
+        <Link href="/" className="px-3 text-title font-bold tracking-tight">
           Project Hub
         </Link>
         <button
           type="button"
           onClick={onClose}
           aria-label="메뉴 닫기"
-          className="rounded-lg p-1.5 text-muted hover:bg-line/40 hover:text-text lg:hidden"
+          className="-mr-2 flex size-11 items-center justify-center rounded-lg text-muted hover:bg-line/40 hover:text-text lg:hidden"
         >
           <X size={18} />
         </button>
@@ -151,7 +151,7 @@ export default function Sidebar({
                 type="button"
                 onClick={() => toggle(group.name)}
                 aria-expanded={isOpen}
-                className="flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-sm text-muted hover:bg-line/40 hover:text-text"
+                className="flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-body text-muted hover:bg-line/40 hover:text-text"
               >
                 <ChevronRight
                   size={14}
@@ -159,7 +159,7 @@ export default function Sidebar({
                 />
                 <FolderIcon size={16} />
                 <span className="truncate">{group.name}</span>
-                <span className="ml-auto text-xs font-semibold">
+                <span className="ml-auto text-caption font-semibold">
                   {group.projects.length}
                 </span>
               </button>
@@ -196,12 +196,12 @@ export default function Sidebar({
             <li
               key={name}
               title={`${name}: ${status}`}
-              className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted"
+              className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-body text-muted"
             >
               <Icon size={16} />
               <span>{name}</span>
               {/* 마우스를 올리면 상태 글자 표시 */}
-              <span className="ml-auto text-xs opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="ml-auto text-caption opacity-0 transition-opacity group-hover:opacity-100">
                 {status}
               </span>
               <span

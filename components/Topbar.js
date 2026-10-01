@@ -44,7 +44,7 @@ export default function Topbar({ projectNames, menuOpen = false, onMenu, onSearc
           <Menu size={20} />
         </button>
         <nav aria-label="현재 위치" className="min-w-0">
-          <ol className="flex min-w-0 items-center gap-1.5 text-sm">
+          <ol className="flex min-w-0 items-center gap-1.5 text-body">
             {crumbs.map((crumb, i) => {
               const last = i === crumbs.length - 1;
               return (
@@ -80,11 +80,11 @@ export default function Topbar({ projectNames, menuOpen = false, onMenu, onSearc
         onClick={onSearch}
         aria-label="검색 (Ctrl+K)"
         aria-keyshortcuts="Control+K Meta+K"
-        className="ml-auto flex size-11 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-line/40 hover:text-text focus-visible:outline-2 focus-visible:outline-accent sm:h-9 sm:w-56 sm:justify-start sm:gap-2 sm:border sm:border-line sm:bg-card sm:px-3 sm:text-sm"
+        className="ml-auto flex size-11 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-line/40 hover:text-text focus-visible:outline-2 focus-visible:outline-accent sm:h-9 sm:w-56 sm:justify-start sm:gap-2 sm:border sm:border-line sm:bg-card sm:px-3 sm:text-body"
       >
         <Search size={18} className="sm:size-[15px]" />
         <span className="hidden sm:inline">검색</span>
-        <kbd className="ml-auto hidden rounded border border-line bg-inset px-1.5 py-0.5 font-sans text-[10px] sm:inline">
+        <kbd className="ml-auto hidden rounded border border-line bg-inset px-1.5 py-0.5 font-sans text-label sm:inline">
           {shortcut}
         </kbd>
       </button>

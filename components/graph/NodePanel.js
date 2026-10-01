@@ -28,7 +28,7 @@ function Field({ label, children }) {
   return (
     <div>
       <p className="label">{label}</p>
-      <div className="mt-1 text-sm leading-relaxed">{children}</div>
+      <div className="mt-1 text-body leading-relaxed">{children}</div>
     </div>
   );
 }
@@ -39,7 +39,7 @@ function NodeButton({ id, name, type = "project", onGo }) {
     <button
       type="button"
       onClick={() => onGo(id)}
-      className="inset flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:border-accent hover:text-accent"
+      className="inset flex w-full items-center gap-2 px-3 py-2 text-left text-body transition-colors hover:border-accent hover:text-accent"
     >
       <Dot type={type} />
       <span className="truncate">{name}</span>
@@ -62,10 +62,10 @@ function ProjectOf({ node, onGo }) {
 function Empty({ counts }) {
   return (
     <div>
-      <p className="text-sm text-muted">노드를 눌러 자세히 보기</p>
+      <p className="text-body text-muted">노드를 눌러 자세히 보기</p>
       <ul className="mt-6 space-y-3">
         {TYPE_ORDER.map((type) => (
-          <li key={type} className="flex items-center gap-2.5 text-sm">
+          <li key={type} className="flex items-center gap-2.5 text-body">
             <Dot type={type} />
             <span>{TYPE_META[type].label}</span>
             <span className="ml-auto font-bold">{counts[type] ?? 0}</span>
@@ -111,7 +111,7 @@ function Body({ node, onGo }) {
           )}
           <Link
             href={`/projects/${node.projectId}`}
-            className="inline-flex items-center gap-1 text-sm text-accent hover:underline"
+            className="inline-flex items-center gap-1 text-body text-accent hover:underline"
           >
             프로젝트 화면 열기
             <ArrowUpRight size={14} />
@@ -170,19 +170,19 @@ function Body({ node, onGo }) {
       return (
         <>
           <div>
-            <p className="text-xs text-muted">
+            <p className="text-caption text-muted">
               <Value value={node.label} />
             </p>
-            <p className="mt-1 text-2xl font-bold text-orange">
+            <p className="mt-1 text-heading font-bold text-orange">
               <Value value={node.after} />
             </p>
             {!isEmpty(node.before) && (
-              <p className="mt-2 text-xs text-muted">
+              <p className="mt-2 text-caption text-muted">
                 이전: <Value value={node.before} />
               </p>
             )}
             {!isEmpty(node.note) && (
-              <p className="mt-1.5 text-xs text-muted">
+              <p className="mt-1.5 text-caption text-muted">
                 <Value value={node.note} />
               </p>
             )}
@@ -222,7 +222,7 @@ function Body({ node, onGo }) {
                 {node.tech.map((tech) => (
                   <li key={tech}>
                     <Value value={tech}>
-                      <span className="inline-block rounded-full border border-line bg-inset px-2.5 py-0.5 text-xs">
+                      <span className="inline-block rounded-full border border-line bg-inset px-2.5 py-0.5 text-caption">
                         {tech}
                       </span>
                     </Value>
@@ -248,10 +248,10 @@ function NodeDetails({ node, onGo, titleId }) {
           <Dot type={node.type} />
           <span className="label">{TYPE_META[node.type].label}</span>
         </p>
-        <h2 id={titleId} className="mt-2 text-lg font-bold leading-snug">
+        <h2 id={titleId} className="mt-2 text-title font-bold leading-snug">
           {node.type === "result" ? node.label : node.name}
         </h2>
-        {node.type === "project" && <p className="mt-1 text-xs text-muted">{node.group}</p>}
+        {node.type === "project" && <p className="mt-1 text-caption text-muted">{node.group}</p>}
       </div>
       <div className="space-y-5">
         <Body node={node} onGo={onGo} />
@@ -279,7 +279,7 @@ export default function NodePanel({ node, counts, onGo }) {
 // 좁은 화면: 그래프 아래 종류별 개수 한 줄
 export function TypeCounts({ counts, className = "" }) {
   return (
-    <p className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted ${className}`}>
+    <p className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted ${className}`}>
       {TYPE_ORDER.map((type) => (
         <span key={type} className="flex items-center gap-1.5 whitespace-nowrap">
           <Dot type={type} />
