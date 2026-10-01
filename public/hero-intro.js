@@ -470,8 +470,8 @@
     });
     window.__hubIntroSkip = intro.skip;
     whenQuiet(function () {
-      // 너무 늦어지면(페이지를 연 지 1.8초 넘음) 연출 없이 걷음
-      if (performance.now() > 1800) intro.skip();
+      // 너무 늦어지면(페이지를 연 지 2.6초 넘음) 연출 없이 걷음
+      if (performance.now() > 2600) intro.skip();
       else intro.begin();
     });
   }
@@ -510,7 +510,8 @@
   // 메인 화면 준비와 겹치면 연출 첫 0.2초가 끊기므로 기다렸다가 시작:
   // ① 소개 카드 컴포넌트의 준비 끝 신호(hub:hydrated, components/home/HeroStarfield.js)
   // ② 그 직후 Next 가 링크를 미리 받는 요청(RSC)들의 응답이 0.25초 동안 더 오지 않음
-  // ③ 브라우저가 한가할 때. 최대 1.5초 대기, 그동안은 미리 그려 둔 첫 장면(덮개와 같은 모양)이 보임
+  //    (배포 사이트에서는 미리 받기가 2초 넘게 이어지므로 ①부터 최대 0.5초까지만 기다림)
+  // ③ 브라우저가 한가할 때. 그동안은 미리 그려 둔 첫 장면(덮개와 같은 모양)이 보임
   function whenQuiet(cb) {
     var fired = false;
     function go() {
@@ -523,7 +524,8 @@
       else setTimeout(go, 50);
     }
     function afterHydrate() {
-      var lastResponse = performance.now();
+      var hydratedAt = performance.now();
+      var lastResponse = hydratedAt;
       var po = null;
       try {
         po = new PerformanceObserver(function () {
@@ -535,7 +537,7 @@
       }
       (function check() {
         if (fired) return po && po.disconnect();
-        if (performance.now() - lastResponse >= 250) {
+        if (performance.now() - lastResponse >= 250 || performance.now() - hydratedAt >= 500) {
           if (po) po.disconnect();
           idle();
         } else setTimeout(check, 40);
@@ -543,7 +545,7 @@
     }
     if (window.__hubHydrated) afterHydrate();
     else addEventListener("hub:hydrated", afterHydrate, { once: true });
-    setTimeout(go, 1500); // 아무리 늦어도
+    setTimeout(go, 2400); // 아무리 늦어도 (준비 끝 신호가 안 올 때)
   }
 
   window.HubIntro = { warp: onClick };
