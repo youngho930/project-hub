@@ -78,12 +78,12 @@ export default function Topbar({ projectNames, menuOpen = false, onMenu, onSearc
       <button
         type="button"
         onClick={onSearch}
-        aria-label="검색 (Ctrl+K)"
         aria-keyshortcuts="Control+K Meta+K"
         className="ml-auto flex size-11 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-line/40 hover:text-text focus-visible:outline-2 focus-visible:outline-accent sm:h-9 sm:w-56 sm:justify-start sm:gap-2 sm:border sm:border-line sm:bg-card sm:px-3 sm:text-body"
       >
-        <Search size={18} className="sm:size-[15px]" />
-        <span className="hidden sm:inline">검색</span>
+        <Search size={18} aria-hidden="true" className="sm:size-[15px]" />
+        {/* 좁은 화면은 글자를 숨기되 화면 읽기 프로그램용 이름으로 남김 */}
+        <span className="sr-only sm:not-sr-only">검색</span>
         <kbd className="ml-auto hidden rounded border border-line bg-inset px-1.5 py-0.5 font-sans text-label sm:inline">
           {shortcut}
         </kbd>

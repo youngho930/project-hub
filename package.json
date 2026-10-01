@@ -9,6 +9,12 @@
     "lint": "eslint",
     "capture": "node scripts/capture-previews.mjs"
   },
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 111",
+    "safari >= 16.4"
+  ],
   "dependencies": {
     "d3-force-3d": "^3.0.6",
     "ical.js": "^2.2.1",

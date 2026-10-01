@@ -12,6 +12,7 @@
   --color-red: #ef4444;
   --color-green: #22c55e;
   --color-blue: #3b82f6;
+  --color-blue-light: #60a5fa; /* 파랑 글자용: 파랑 15% 배지 위 대비 5.8:1 (#3b82f6 은 4.0:1) */
 
   /* 글자 크기 단계 (Tailwind 기본 크기는 끄고 아래 이름만 씀: text-label, text-caption …) */
   --text-*: initial;

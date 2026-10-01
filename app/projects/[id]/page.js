@@ -33,12 +33,12 @@ export async function generateMetadata({ params }) {
   });
 }
 
-// 라벨: 작은 대문자 영문 + 옆에 회색 한글
+// 라벨: 작은 대문자 영문 + 옆에 회색 한글 (muted 85%: 카드 위 대비 5.3:1)
 function SectionLabel({ en, ko }) {
   return (
     <h2 className="flex items-baseline gap-2">
       <span className="label">{en}</span>
-      <span className="text-caption text-muted/70">{ko}</span>
+      <span className="text-caption text-muted/85">{ko}</span>
     </h2>
   );
 }
@@ -262,7 +262,7 @@ export default async function ProjectPage({ params }) {
                 height={preview.height}
                 url={deployUrl}
                 label={project.name}
-                sizes="(min-width: 1640px) 1400px, calc(100vw - 320px)"
+                sizes="(min-width: 1720px) 1400px, (min-width: 1024px) calc(100vw - 320px), (min-width: 640px) calc(100vw - 48px), calc(100vw - 32px)"
                 eager
               />
               {preview.capturedAt && (

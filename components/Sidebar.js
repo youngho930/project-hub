@@ -200,12 +200,12 @@ export default function Sidebar({
             >
               <Icon size={16} />
               <span>{name}</span>
-              {/* 마우스를 올리면 상태 글자 표시 */}
+              {/* 마우스를 올리면 상태 글자 표시 (화면 읽기 프로그램은 항상 읽음). 옆 점은 장식 */}
               <span className="ml-auto text-caption opacity-0 transition-opacity group-hover:opacity-100">
                 {status}
               </span>
               <span
-                aria-label={status}
+                aria-hidden="true"
                 className={`size-2 shrink-0 rounded-full ${DOT_COLOR[status] ?? "bg-muted/50"}`}
               />
             </li>

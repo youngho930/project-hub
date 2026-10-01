@@ -213,7 +213,7 @@ export default function CommandPalette({ open, onClose, index }) {
             placeholder="프로젝트, 기술, 결정 검색 (초성도 돼요)"
             autoComplete="off"
             spellCheck={false}
-            className="h-14 min-w-0 flex-1 bg-transparent text-input outline-none placeholder:text-muted/70"
+            className="h-14 min-w-0 flex-1 bg-transparent text-input outline-none placeholder:text-muted/85"
           />
           <button
             type="button"

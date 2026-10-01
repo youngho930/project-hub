@@ -3,10 +3,23 @@ import Image from "next/image";
 // 이미지 영역 최대 높이 (화면 높이 기준). 넘으면 비율을 유지한 채 폭을 줄이고 가운데 정렬
 const MAX_IMAGE_VH = 70;
 
+// sizes 의 각 폭을 min(폭, 높이 제한 폭) 으로 감쌈. 예: "(min-width: 1024px) 50vw, 100vw"
+function withHeightCap(sizes, cap) {
+  return sizes
+    .split(",")
+    .map((part) => {
+      const match = part.trim().match(/^(\(.+\)\s+)?(.+)$/);
+      return `${match[1] ?? ""}min(${match[2]}, ${cap})`;
+    })
+    .join(", ");
+}
+
 // 브라우저 창 모양 미리보기: 얇은 상단 바(점 3개 + 주소) + 이미지.
 // 이미지 영역은 실제 가로·세로 비율(width, height)을 따르고, 이미지는 잘리지 않게 전체를 보여줌.
 // 배포 주소가 있으면 누르면 새 탭으로 열리고, 없으면 누를 수 없음.
-// compact: 좁은 패널용(높이 제한 없음) / eager: 화면 위쪽에 바로 보이는 경우(프로젝트 화면) 먼저 불러옴
+// compact: 좁은 패널용(높이 제한 없음)
+// eager: 화면 위쪽에 바로 보이는 가장 큰 요소인 경우(프로젝트 화면) 높은 우선순위로 먼저 불러옴
+// sizes: 부모 폭 기준 표시 폭. 높이 제한(70vh × 비율)이 더 좁으면 그 폭으로 줄여서 계산
 export default function PreviewFrame({
   src,
   width,
@@ -21,6 +34,8 @@ export default function PreviewFrame({
   const ratio = width > 0 && height > 0 ? width / height : 16 / 10;
 
   // 틀 폭 = min(부모 폭, 최대 높이 × 비율) → 이미지 높이가 최대 높이를 넘지 않음
+  const imageSizes =
+    compact || !sizes ? sizes : withHeightCap(sizes, `${MAX_IMAGE_VH}vh * ${ratio.toFixed(4)}`);
   const outerStyle = compact
     ? undefined
     : { width: `min(100%, calc(${MAX_IMAGE_VH}vh * ${ratio.toFixed(4)}))` };
@@ -53,8 +68,9 @@ export default function PreviewFrame({
           src={src}
           alt={`${label} 미리보기`}
           fill
-          sizes={sizes}
+          sizes={imageSizes}
           loading={eager ? "eager" : "lazy"}
+          fetchPriority={eager ? "high" : undefined}
           className="object-contain"
         />
       </div>

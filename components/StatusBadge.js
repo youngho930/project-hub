@@ -1,6 +1,6 @@
 // 진행 상태 배지: 개발 중은 파랑, 구상 중은 회색 (상태가 없으면 표시 안 함)
 const STYLE = {
-  "개발 중": "border-blue/40 bg-blue/15 text-blue",
+  "개발 중": "border-blue/40 bg-blue/15 text-blue-light",
   "구상 중": "border-line bg-line/60 text-muted",
 };
 
