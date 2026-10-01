@@ -25,11 +25,12 @@
     "capturedAt": "2026-09-30"
   },
   "qc-report-system": {
-    "file": "qc-report-system/04-list.webp",
+    "file": "qc-report-system/00-preview.webp",
     "width": 1280,
-    "height": 860,
+    "height": 482,
     "capturedAt": "2026-10-01",
     "manual": true,
+    "card": "illustration",
     "gallery": [
       {
         "file": "qc-report-system/01-write.webp",

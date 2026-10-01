@@ -81,6 +81,13 @@ function pngSize(file) {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
+// manifest 항목에서 자동 캡처가 만들지 않는 값만 골라 둠
+function keepManual(entry = {}) {
+  const kept = {};
+  for (const key of ["card", "gallery"]) if (entry[key] !== undefined) kept[key] = entry[key];
+  return kept;
+}
+
 async function capture(browser, project) {
   const url = project.deploy.url;
   const isStreamlit = /\.streamlit\.app/i.test(url);
@@ -171,8 +178,8 @@ async function main() {
           file: path.basename(file),
           ...pngSize(file), // 화면은 이 비율로 틀을 잡는다 (잘리지 않게)
           capturedAt: kstDate(),
-          // 절차 캡처(gallery)는 직접 넣은 것이라 다시 찍어도 유지
-          ...(manifest[project.id]?.gallery ? { gallery: manifest[project.id].gallery } : {}),
+          // 직접 넣은 표시(card)와 절차 캡처(gallery)는 다시 찍어도 유지
+          ...keepManual(manifest[project.id]),
         };
         ok.push(`${project.id} → ${path.relative(ROOT, file)}`);
       } catch (error) {

@@ -13,7 +13,7 @@ import { getCalendarSummary } from "@/lib/calendar";
 import { getGitHubStatus } from "@/lib/github";
 import { getGraph } from "@/lib/graph";
 import { getPipeline } from "@/lib/pipeline";
-import { getPreview } from "@/lib/previews";
+import { getCardPreview } from "@/lib/previews";
 import { getProfile } from "@/lib/profile";
 import { NEEDS_CHECK, getAllProjects } from "@/lib/projects";
 
@@ -104,7 +104,7 @@ function arrange(projects) {
 }
 
 function ProjectCard({ project }) {
-  const preview = getPreview(project.id);
+  const preview = getCardPreview(project.id);
   const Illustration = preview ? null : ILLUSTRATIONS[project.id];
   const wide = WIDE[FEATURED[project.id]];
   const color = GROUP_COLOR[project.group] ?? DEFAULT_COLOR;

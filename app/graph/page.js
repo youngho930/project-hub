@@ -1,7 +1,7 @@
 import GraphView from "@/components/graph/GraphView";
 import { getRepoActivities } from "@/lib/github";
 import { getGraph } from "@/lib/graph";
-import { getPreview } from "@/lib/previews";
+import { getCardPreview } from "@/lib/previews";
 import { pageMetadata } from "@/lib/site";
 
 export const metadata = pageMetadata({
@@ -24,7 +24,7 @@ export default async function GraphPage({ searchParams }) {
       }
       // 프로젝트 노드: 미리보기 이미지가 있으면 경로와 크기만 추가
       if (node.type === "project") {
-        const preview = getPreview(node.projectId);
+        const preview = getCardPreview(node.projectId);
         if (preview) {
           const { src, width, height } = preview;
           return { ...node, preview: { src, width, height } };
