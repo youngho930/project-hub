@@ -39,9 +39,9 @@
   --spacing-card: 16px;
   --spacing-section: 32px;
 
-  --font-sans: "Pretendard Variable", Pretendard, -apple-system,
-    BlinkMacSystemFont, system-ui, "Segoe UI", "Malgun Gothic",
-    "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  /* Pretendard 는 next/font/local 로 사이트 안에서 제공. --font-pretendard 에 "Pretendard Rest" 와
+     시스템 글꼴 대체 목록까지 들어 있음 (app/fonts.js) */
+  --font-sans: var(--font-pretendard), sans-serif;
 }
 
 html {

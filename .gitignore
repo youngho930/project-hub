@@ -43,3 +43,6 @@ next-env.d.ts
 
 # design references (third-party images, do not commit)
 /docs/design-ref/
+
+# 빌드 때 만드는 부분 글꼴 (scripts/build-fonts.mjs)
+/assets/fonts/generated/

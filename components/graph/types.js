@@ -1,3 +1,5 @@
+import { pretendard } from "@/app/fonts";
+
 // 노드 종류별 이름·색 (범례, 캔버스, 패널에서 같이 사용)
 export const TYPE_META = {
   project: { label: "프로젝트", color: "#a78bfa" },
@@ -26,7 +28,8 @@ export function radius(node) {
 // 이름을 항상 표시하는 노드와 글자 크기(px, 화면 기준)
 export const LABEL_SIZE = { project: 13, tech: 11, part: 10 };
 
-export const LABEL_FONT = '"Pretendard Variable", Pretendard, system-ui, sans-serif';
+// 캔버스 글자도 화면과 같은 글꼴 (next/font 가 만든 이름 + 대체 글꼴)
+export const LABEL_FONT = pretendard.style.fontFamily;
 
 // 이 배율보다 축소하면 글자도 그래프와 같이 작아짐.
 // 그래서 그래프 단위로 본 글자 크기는 최대 LABEL_SIZE / LABEL_MIN_SCALE 로 고정되고,

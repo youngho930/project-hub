@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/build-fonts.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/build-fonts.mjs",
     "build": "next build",
+    "postbuild": "node scripts/check-fonts.mjs",
     "start": "next start",
     "lint": "eslint",
+    "fonts": "node scripts/build-fonts.mjs",
     "capture": "node scripts/capture-previews.mjs"
   },
   "browserslist": [
@@ -28,7 +32,9 @@
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.3.7",
+    "espree": "^10.4.0",
     "playwright": "^1.63.0",
+    "subset-font": "^2.9.0",
     "tailwindcss": "^4"
   }
 }

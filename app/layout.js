@@ -1,5 +1,7 @@
+import "@/assets/fonts/generated/pretendard-rest.css";
 import "./globals.css";
 import Shell from "@/components/Shell";
+import { pretendard } from "./fonts";
 import { getCalendarSummary } from "@/lib/calendar";
 import { getGitHubStatus } from "@/lib/github";
 import { getPipeline } from "@/lib/pipeline";
@@ -27,14 +29,7 @@ export default async function RootLayout({ children }) {
   ]);
 
   return (
-    <html lang="ko">
-      <head>
-        <link
-          rel="stylesheet"
-          crossOrigin="anonymous"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-        />
-      </head>
+    <html lang="ko" className={pretendard.variable}>
       <body className="antialiased">
         <Shell
           sidebar={{

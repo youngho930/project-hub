@@ -217,7 +217,8 @@ export default function GraphView({ graph: incoming, focus }) {
   useEffect(() => {
     const text = graph.nodes.map((node) => node.name).join("");
     document.fonts
-      ?.load(`12px "Pretendard Variable"`, text)
+      ?.load(`600 12px ${LABEL_FONT}`, text)
+      .then(() => document.fonts.load(`400 12px ${LABEL_FONT}`, text))
       .then(() => setFontTick((tick) => tick + 1))
       .catch(() => {});
   }, [graph]);
