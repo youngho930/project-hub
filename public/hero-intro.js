@@ -78,15 +78,32 @@
     };
   }
 
-  // 빛줄기: 70%는 소실점 둘레 원통 벽(터널), 30%는 안쪽에 흩어짐
-  function makeStreak(z) {
+  // 빛줄기: 70%는 소실점 둘레 원통 벽(터널), 30%는 안쪽에 흩어짐.
+  // 다시 쓸 때는 새 객체를 만들지 않고 값만 바꿈 (가장 빠른 구간에 쏟아지는 메모리 정리 멈춤 방지)
+  function makeStreak(z, s) {
+    s = s || {};
     var ang = rnd(0, 6.2832);
     var r = Math.random() < 0.7 ? rnd(0.75, 1.25) : Math.sqrt(Math.random()) * 1.2 + 0.08;
-    return { x: Math.cos(ang) * r, y: Math.sin(ang) * r, z: z, c: pickColorIndex(), l: rnd(0.55, 1.45), hi: Math.random() < 0.35 ? 1 : 0 };
+    s.x = Math.cos(ang) * r;
+    s.y = Math.sin(ang) * r;
+    s.z = z;
+    s.c = pickColorIndex();
+    s.l = rnd(0.55, 1.45);
+    s.hi = Math.random() < 0.35 ? 1 : 0;
+    return s;
   }
-  function makeShard(z) {
+  function makeShard(z, d) {
+    d = d || {};
     var ang = rnd(0, 6.2832), r = rnd(0.25, 1.1);
-    return { x: Math.cos(ang) * r, y: Math.sin(ang) * r, z: z, c: SHARD_COLORS[Math.floor(Math.random() * SHARD_COLORS.length)], s: rnd(0.5, 1.6), a: rnd(0.55, 1), r: rnd(0, 6.28), vr: rnd(-1.2, 1.2) };
+    d.x = Math.cos(ang) * r;
+    d.y = Math.sin(ang) * r;
+    d.z = z;
+    d.c = SHARD_COLORS[Math.floor(Math.random() * SHARD_COLORS.length)];
+    d.s = rnd(0.5, 1.6);
+    d.a = rnd(0.55, 1);
+    d.r = rnd(0, 6.28);
+    d.vr = rnd(-1.2, 1.2);
+    return d;
   }
 
   // 한 번의 연출 (도착 또는 워프). timeline(t초) 이 속도·섬광·투명도를 정함
@@ -121,6 +138,36 @@
     vg.addColorStop(1, "rgba(0,0,0,0.78)");
     vctx.fillStyle = vg;
     vctx.fillRect(0, 0, w, h);
+
+    // 섬광과 가로 렌즈 플레어도 한 번만 그려 두고 매 프레임 투명도만 바꿔 얹음
+    // (화면 전체 그라데이션을 매 프레임 새로 그리면 가장 밝은 순간에 프레임이 떨어짐)
+    var flashImg = document.createElement("canvas");
+    flashImg.width = Math.ceil(w / 2);
+    flashImg.height = Math.ceil(h / 2);
+    var fctx = flashImg.getContext("2d");
+    var fg = fctx.createRadialGradient(w / 4, h / 4, 0, w / 4, h / 4, (D * 0.95) / 2);
+    fg.addColorStop(0, "rgba(255,255,255,1)");
+    fg.addColorStop(0.1, "rgba(236,254,255,0.95)");
+    fg.addColorStop(0.28, "rgba(165,243,252,0.55)");
+    fg.addColorStop(0.55, "rgba(34,150,220,0.16)");
+    fg.addColorStop(1, "rgba(30,60,140,0)");
+    fctx.fillStyle = fg;
+    fctx.fillRect(0, 0, flashImg.width, flashImg.height);
+    var flareImg = document.createElement("canvas");
+    flareImg.width = Math.ceil(w);
+    flareImg.height = 14;
+    var lctx = flareImg.getContext("2d");
+    var lg = lctx.createLinearGradient(0, 0, w, 0);
+    lg.addColorStop(0, "rgba(56,189,248,0)");
+    lg.addColorStop(0.3, "rgba(103,232,249,0.35)");
+    lg.addColorStop(0.5, "rgba(255,255,255,1)");
+    lg.addColorStop(0.7, "rgba(103,232,249,0.35)");
+    lg.addColorStop(1, "rgba(56,189,248,0)");
+    lctx.fillStyle = lg;
+    lctx.globalAlpha = 0.25;
+    lctx.fillRect(0, 0, w, 14);
+    lctx.globalAlpha = 1;
+    lctx.fillRect(0, 6, w, 2);
 
     // 빛줄기 묶음: [색][깊이층 × 2 밝기][토막] → 좌표 목록
     var buckets = [];
@@ -188,9 +235,9 @@
       for (i = 0; i < active; i++) {
         var s = streaks[i];
         s.z -= 0.075 * S * dt;
-        if (s.z < 0.06) { streaks[i] = makeStreak(Z_FAR); continue; }
+        if (s.z < 0.06) { makeStreak(Z_FAR, s); continue; }
         var hx = cx + (s.x / s.z) * F, hy = cy + (s.y / s.z) * F;
-        if (hx < -120 || hx > w + 120 || hy < -120 || hy > h + 120) { streaks[i] = makeStreak(Z_FAR); continue; }
+        if (hx < -120 || hx > w + 120 || hy < -120 || hy > h + 120) { makeStreak(Z_FAR, s); continue; }
         var tz = Math.min(Z_FAR + 1, s.z + tail * s.l);
         var tx = cx + (s.x / tz) * F, ty = cy + (s.y / tz) * F;
         var near = 1 - s.z / Z_FAR;
@@ -228,7 +275,7 @@
         var d = shards[i];
         d.z -= 0.03 * (3 + S * 0.5) * dt;
         d.r += d.vr * dt;
-        if (d.z < 0.2) { shards[i] = makeShard(Z_FAR * 0.7); continue; }
+        if (d.z < 0.2) { makeShard(Z_FAR * 0.7, d); continue; }
         var px = cx + (d.x / d.z) * F, py = cy + (d.y / d.z) * F;
         var size = (d.s * 9) / d.z;
         var appear = clamp01((Z_FAR * 0.7 - d.z) / 0.4);
@@ -271,34 +318,21 @@
         cg.addColorStop(0.35, "rgba(34,211,238," + 0.25 * core + ")");
         cg.addColorStop(1, "rgba(59,130,246,0)");
         ctx.fillStyle = cg;
-        ctx.fillRect(0, 0, w, h);
+        ctx.fillRect(cx - cr * 5, cy - cr * 5, cr * 10, cr * 10); // 빛이 닿는 곳만
       }
 
       // 섬광: 가운데는 하얗게 강렬하고 가장자리로 갈수록 빠르게 어두워지는 방사형
       var f = tl.flash;
       if (f > 0) {
-        var fg = ctx.createRadialGradient(cx, cy, 0, cx, cy, D * 0.95);
-        fg.addColorStop(0, "rgba(255,255,255," + f + ")");
-        fg.addColorStop(0.1, "rgba(236,254,255," + 0.95 * f + ")");
-        fg.addColorStop(0.28, "rgba(165,243,252," + 0.55 * f + ")");
-        fg.addColorStop(0.55, "rgba(34,150,220," + 0.16 * f + ")");
-        fg.addColorStop(1, "rgba(30,60,140,0)");
-        ctx.fillStyle = fg;
-        ctx.fillRect(0, 0, w, h);
+        ctx.globalAlpha = Math.min(1, f);
+        ctx.drawImage(flashImg, 0, 0, w, h);
+        ctx.globalAlpha = 1;
       }
       // 가로 렌즈 플레어: 소실점을 가로지르는 얇고 긴 빛줄기
       var fl = tl.flare;
       if (fl > 0) {
-        var lg = ctx.createLinearGradient(0, cy, w, cy);
-        lg.addColorStop(0, "rgba(56,189,248,0)");
-        lg.addColorStop(0.3, "rgba(103,232,249," + 0.35 * fl + ")");
-        lg.addColorStop(0.5, "rgba(255,255,255," + fl + ")");
-        lg.addColorStop(0.7, "rgba(103,232,249," + 0.35 * fl + ")");
-        lg.addColorStop(1, "rgba(56,189,248,0)");
-        ctx.fillStyle = lg;
-        ctx.fillRect(0, cy - 1, w, 2);
-        ctx.globalAlpha = 0.25;
-        ctx.fillRect(0, cy - 7, w, 14);
+        ctx.globalAlpha = Math.min(1, fl);
+        ctx.drawImage(flareImg, 0, cy - 7, w, 14);
         ctx.globalAlpha = 1;
       }
 
@@ -342,6 +376,7 @@
       cancelAnimationFrame(frame);
       canvas.remove();
       vignette.width = vignette.height = 0;
+      flashImg.width = flashImg.height = flareImg.width = flareImg.height = 0;
       buckets = streaks = shards = null;
       if (opts.onEnd) opts.onEnd();
     }
@@ -367,6 +402,14 @@
       start = last = performance.now();
       frame = requestAnimationFrame(tick);
     }
+    // 섬광·플레어·사이트 색 전환에 쓰는 그라데이션을 거의 투명하게 한 번 그려 둠:
+    // 처음 보는 그라데이션을 화면에 그릴 때의 일회성 준비 비용(가장 밝은 순간의 30~50ms 멈춤)을 미리 치름
+    var real = opts.timeline;
+    opts.timeline = function () {
+      return { speed: 97, core: 1, flash: 0.002, flare: 0.002, elements: 0.002, toSite: 0.002, opacity: 1 };
+    };
+    draw(0, 0);
+    opts.timeline = real;
     draw(0, 0);
     if (!opts.deferStart) begin();
     return { skip: skip, finish: finish, begin: begin };
@@ -464,9 +507,10 @@
   }
   document.addEventListener("click", onClick);
 
-  // 메인 화면 준비(Next·React 스크립트 실행·하이드레이션)와 겹치면 연출 첫 0.4초가 끊기므로,
-  // 소개 카드 컴포넌트가 준비 끝 신호(hub:hydrated, components/home/HeroStarfield.js)를 보낸 뒤
-  // 브라우저가 한가할 때 시작 (최대 1.5초 대기). 그동안은 미리 그려 둔 첫 장면(덮개와 같은 모양)이 보임
+  // 메인 화면 준비와 겹치면 연출 첫 0.2초가 끊기므로 기다렸다가 시작:
+  // ① 소개 카드 컴포넌트의 준비 끝 신호(hub:hydrated, components/home/HeroStarfield.js)
+  // ② 그 직후 Next 가 링크를 미리 받는 요청(RSC)들의 응답이 0.25초 동안 더 오지 않음
+  // ③ 브라우저가 한가할 때. 최대 1.5초 대기, 그동안은 미리 그려 둔 첫 장면(덮개와 같은 모양)이 보임
   function whenQuiet(cb) {
     var fired = false;
     function go() {
@@ -474,9 +518,28 @@
       fired = true;
       cb();
     }
-    function afterHydrate() {
+    function idle() {
       if ("requestIdleCallback" in window) requestIdleCallback(go, { timeout: 300 });
       else setTimeout(go, 50);
+    }
+    function afterHydrate() {
+      var lastResponse = performance.now();
+      var po = null;
+      try {
+        po = new PerformanceObserver(function () {
+          lastResponse = performance.now();
+        });
+        po.observe({ type: "resource" });
+      } catch (e) {
+        po = null;
+      }
+      (function check() {
+        if (fired) return po && po.disconnect();
+        if (performance.now() - lastResponse >= 250) {
+          if (po) po.disconnect();
+          idle();
+        } else setTimeout(check, 40);
+      })();
     }
     if (window.__hubHydrated) afterHydrate();
     else addEventListener("hub:hydrated", afterHydrate, { once: true });
