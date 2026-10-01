@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ChevronRight } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react";
 import { CHECKLIST_SIZE, getCompletion, getMissed } from "@/lib/projects";
 import { pageMetadata } from "@/lib/site";
 
@@ -90,21 +90,38 @@ export default function StatusPage() {
               </div>
               <div>
                 <dt className="label">Left</dt>
-                <dd className="text-heading font-bold text-red">{completion.left}</dd>
+                <dd className={`text-heading font-bold ${completion.left > 0 ? "text-red" : "text-green"}`}>
+                  {completion.left}
+                </dd>
               </div>
             </dl>
           </div>
         </section>
 
-        <section className="card border-red/40">
+        {/* 빈 경우는 경고(빨강) 대신 완료(초록) 모양으로 */}
+        <section className={`card ${missed.length === 0 ? "border-green/30" : "border-red/40"}`}>
           <h2 className="flex items-center gap-2">
             <span className="label">Missed</span>
-            <AlertTriangle size={15} className="text-red" />
-            <span className="text-title font-bold text-red">{completion.left}</span>
+            {missed.length === 0 ? (
+              <CheckCircle2 size={15} className="text-green" />
+            ) : (
+              <AlertTriangle size={15} className="text-red" />
+            )}
+            <span className={`text-title font-bold ${missed.length === 0 ? "text-green" : "text-red"}`}>
+              {completion.left}
+            </span>
           </h2>
           <p className="mt-1 text-caption text-muted">포트폴리오에 채워야 할 항목</p>
           {missed.length === 0 ? (
-            <p className="mt-6 text-body text-muted">모두 채워졌습니다</p>
+            <div className="inset mt-5 flex items-center gap-3 px-4 py-4">
+              <CheckCircle2 size={20} className="shrink-0 text-green" />
+              <div>
+                <p className="text-body font-semibold">채워야 할 항목이 없어요</p>
+                <p className="mt-0.5 text-caption text-muted">
+                  모든 프로젝트가 진행 상태에 맞는 체크리스트를 채웠습니다.
+                </p>
+              </div>
+            </div>
           ) : (
             <ul className="mt-5 space-y-2">
               {missed.map((item) => (

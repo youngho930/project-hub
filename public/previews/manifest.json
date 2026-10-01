@@ -23,5 +23,38 @@
     "width": 1440,
     "height": 900,
     "capturedAt": "2026-09-30"
+  },
+  "qc-report-system": {
+    "file": "qc-report-system/04-list.webp",
+    "width": 1280,
+    "height": 860,
+    "capturedAt": "2026-10-01",
+    "manual": true,
+    "gallery": [
+      {
+        "file": "qc-report-system/01-write.webp",
+        "width": 1280,
+        "height": 860,
+        "caption": "보고서 작성"
+      },
+      {
+        "file": "qc-report-system/02-reject.webp",
+        "width": 1280,
+        "height": 1154,
+        "caption": "반려 (사유 필수)"
+      },
+      {
+        "file": "qc-report-system/03-approve.webp",
+        "width": 1280,
+        "height": 1272,
+        "caption": "승인과 결재 이력"
+      },
+      {
+        "file": "qc-report-system/04-list.webp",
+        "width": 1280,
+        "height": 860,
+        "caption": "검색과 요약 통계"
+      }
+    ]
   }
 }

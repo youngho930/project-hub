@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, Lock, Network } from "lucide-react";
 import PreviewFrame from "@/components/PreviewFrame";
+import WorkflowGallery from "@/components/WorkflowGallery";
 import RelativeTime from "@/components/RelativeTime";
 import StatusBadge from "@/components/StatusBadge";
 import { CheckBadge, Value } from "@/components/Value";
 import { GITHUB_STATUS, getRepoActivities, reposOf } from "@/lib/github";
-import { getPreview } from "@/lib/previews";
+import { getGallery, getPreview } from "@/lib/previews";
 import { NEEDS_CHECK, getAllProjects, getProject } from "@/lib/projects";
 import { pageMetadata } from "@/lib/site";
 
@@ -213,6 +214,8 @@ export default async function ProjectPage({ params }) {
   const hasRepos = reposOf(project).length > 0;
   // public/previews/manifest.json 에 이미지 파일이 적혀 있을 때만
   const preview = getPreview(project.id);
+  // 절차 시연 캡처 (manifest 의 gallery 가 있는 프로젝트만)
+  const gallery = getGallery(project.id);
   const deployUrl = /^https?:\/\//.test(deploy.url ?? "") ? deploy.url : null;
 
   const allProjects = getAllProjects();
@@ -265,6 +268,15 @@ export default async function ProjectPage({ params }) {
               {preview.capturedAt && (
                 <p className="mt-2 text-caption text-muted">{preview.capturedAt} 캡처</p>
               )}
+            </div>
+          </section>
+        )}
+
+        {gallery.length > 0 && (
+          <section>
+            <SectionLabel en="Workflow" ko="절차" />
+            <div className="mt-3">
+              <WorkflowGallery steps={gallery} label={project.name} />
             </div>
           </section>
         )}

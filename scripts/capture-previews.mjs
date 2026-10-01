@@ -171,6 +171,8 @@ async function main() {
           file: path.basename(file),
           ...pngSize(file), // 화면은 이 비율로 틀을 잡는다 (잘리지 않게)
           capturedAt: kstDate(),
+          // 절차 캡처(gallery)는 직접 넣은 것이라 다시 찍어도 유지
+          ...(manifest[project.id]?.gallery ? { gallery: manifest[project.id].gallery } : {}),
         };
         ok.push(`${project.id} → ${path.relative(ROOT, file)}`);
       } catch (error) {
