@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useSitePathname } from "@/lib/use-site-pathname";
 import { useEffect, useState } from "react";
 import CommandPalette from "./search/CommandPalette";
 import Sidebar from "./Sidebar";
@@ -9,7 +9,7 @@ import Topbar from "./Topbar";
 // 사이드바 + 상단 바 + 본문 틀.
 // 넓은 화면(lg 이상)은 사이드바 고정, 좁은 화면은 햄버거 버튼으로 여닫는 메뉴.
 export default function Shell({ sidebar, projectNames, searchIndex, children }) {
-  const pathname = usePathname();
+  const pathname = useSitePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 

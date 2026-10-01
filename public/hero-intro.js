@@ -17,6 +17,14 @@
   if (window.HubIntro) return;
 
   var reducedQuery = matchMedia("(prefers-reduced-motion: reduce)");
+  // 연출이 끝나거나 생략된 이유 기록 (window.__hubIntroLog, app/layout.js 의 <head> 스크립트와 같은 기록)
+  function logReason(reason, detail) {
+    if (window.__hubIntroLogReason) window.__hubIntroLogReason(reason, detail);
+  }
+  function logEvent(text) {
+    var L = window.__hubIntroLog;
+    if (L && L.events.length < 8) L.events.push(Math.round(performance.now()) + "ms " + text);
+  }
   // 빛줄기 색: 청록·파랑 위주에 사이트 보라, 약간의 흰빛
   var COLORS = [
     [103, 232, 249, 0.36], // 청록
@@ -137,11 +145,12 @@
       bokeh.push({ x: cx + Math.cos(ang) * w * dist, y: cy + Math.sin(ang) * h * dist, r: rnd(M * 0.06, M * 0.16), c: COLORS[i % 3], a: rnd(0.05, 0.12), vx: rnd(-6, 6), vy: rnd(-6, 6) });
     }
     // 비네트는 한 번만 만들어 두고 매 프레임 맨 위에 덮음 (끝까지 유지)
+    // 화면 절반 크기로 그려 늘려 씀 (부드러운 그라데이션이라 모양 차이 없음, 휴대폰 캔버스 메모리 절약)
     var vignette = document.createElement("canvas");
-    vignette.width = canvas.width;
-    vignette.height = canvas.height;
+    vignette.width = Math.ceil(w / 2);
+    vignette.height = Math.ceil(h / 2);
     var vctx = vignette.getContext("2d");
-    vctx.setTransform(B.dpr, 0, 0, B.dpr, 0, 0);
+    vctx.setTransform(0.5, 0, 0, 0.5, 0, 0);
     var vg = vctx.createRadialGradient(cx, cy, M * 0.3, cx, cy, D);
     vg.addColorStop(0, "rgba(0,0,0,0)");
     vg.addColorStop(1, "rgba(0,0,0,0.78)");
@@ -416,6 +425,20 @@
 
     function tick(now) {
       if (done) return;
+      try {
+        step(now);
+      } catch (err) {
+        logReason("오류", err && err.message);
+        finish();
+      }
+    }
+    function step(now) {
+      // 바깥(예: 하이드레이션 불일치로 React 가 화면을 다시 그림)에서 캔버스나 연출 표시가 지워지면 다시 붙임
+      if (!canvas.isConnected && document.body) {
+        logEvent("캔버스가 바깥에서 지워져 다시 붙임");
+        document.body.appendChild(canvas);
+      }
+      if (opts.keepClasses) opts.keepClasses();
       var t = (now - start) / 1000;
       var dt = Math.min(0.05, (now - last) / 1000);
       if (stats.frames > 0) {
@@ -456,8 +479,9 @@
       if (opts.onEnd) opts.onEnd();
     }
     // 건너뛰기: 즉시 오버레이를 없애고 메인 화면으로
-    function skip() {
+    function skip(reason, detail) {
       if (done) return;
+      if (reason) logReason(reason, detail);
       if (opts.onSkip) opts.onSkip();
       finish();
     }
@@ -467,6 +491,7 @@
     function begin() {
       if (begun || done) return;
       begun = true;
+      if (window.__hubIntroLog && opts.isIntro) window.__hubIntroLog.begin = Math.round(performance.now());
       if (opts.onBegin) opts.onBegin();
       start = last = performance.now();
       frame = requestAnimationFrame(tick);
@@ -477,10 +502,19 @@
     opts.timeline = function () {
       return { speed: 97, core: 1, flash: 0.002, flare: 0.002, violet: 0.5, hole: 0.02, elements: 0.002, toSite: 0.002, opacity: 1 };
     };
-    draw(0, 0);
-    opts.timeline = real;
-    draw(0, 0);
+    try {
+      draw(0, 0);
+      opts.timeline = real;
+      draw(0, 0);
+    } catch (err) {
+      logReason("오류", err && err.message);
+      finish();
+      return { skip: function () {}, finish: function () {}, begin: function () {} };
+    }
     if (opts.fadeIn) canvas.style.opacity = "0";
+    if (opts.isIntro && window.__hubIntroLog) {
+      window.__hubIntroLog.canvas = canvas.width + "×" + canvas.height + " (화면 " + w + "×" + h + ", 배율 " + B.dpr + ")";
+    }
     if (!opts.deferStart) begin();
     return { skip: skip, finish: finish, begin: begin };
   }
@@ -536,7 +570,18 @@
       if (window.__hubIntroReveal) window.__hubIntroReveal();
     }
     intro = run({
+      isIntro: true,
       deferStart: true,
+      // React 가 화면을 다시 그려 <html> 클래스·스타일이 지워져도 연출 중 표시를 되살림
+      keepClasses: function () {
+        if (revealed) return;
+        var r = document.documentElement;
+        if (!r.classList.contains("hub-intro")) {
+          logEvent("연출 표시가 바깥에서 지워져 되살림");
+          r.classList.add("hub-intro", "hub-cover", "hub-cover-off");
+          r.style.setProperty("--hub-skip-label", '"건너뛰기"');
+        }
+      },
       duration: REVEAL_AT + OPEN_SEC + 0.02,
       timeline: introTimeline,
       onTime: function (t) {
@@ -550,6 +595,7 @@
       fadeIn: true,
       onSkip: reveal,
       onEnd: function () {
+        logReason("정상 완료");
         reveal();
         window.__hubIntroRunning = false;
         if (window.__hubIntroEnd) window.__hubIntroEnd();
@@ -558,7 +604,8 @@
     window.__hubIntroSkip = intro.skip;
     whenQuiet(function () {
       // 너무 늦어지면(페이지를 연 지 2.6초 넘음) 연출 없이 걷음
-      if (performance.now() > 2600) intro.skip();
+      var now = Math.round(performance.now());
+      if (now > 2600) intro.skip("느림 생략", "움직이기 시작이 " + now + "ms 로 2.6초 넘음");
       else intro.begin();
     });
   }

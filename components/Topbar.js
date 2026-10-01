@@ -2,7 +2,7 @@
 
 import { ChevronRight, Menu, Search } from "lucide-react";
 import { useSyncExternalStore } from "react";
-import { usePathname } from "next/navigation";
+import { useSitePathname } from "@/lib/use-site-pathname";
 
 function crumbsFor(pathname, projectNames) {
   if (pathname.startsWith("/projects/")) {
@@ -25,7 +25,7 @@ const useShortcutLabel = () =>
 
 export default function Topbar({ projectNames, menuOpen = false, onMenu, onSearch }) {
   const shortcut = useShortcutLabel();
-  const pathname = usePathname();
+  const pathname = useSitePathname();
   // 첫 화면은 "홈" 하나, 다른 화면은 "홈 > …"
   const crumbs = ["홈", ...crumbsFor(pathname, projectNames)];
 

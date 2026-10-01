@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useSitePathname } from "@/lib/use-site-pathname";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import StatusBadge from "./StatusBadge";
 
@@ -65,7 +65,7 @@ export default function Sidebar({
   open = false,
   onClose,
 }) {
-  const pathname = usePathname();
+  const pathname = useSitePathname();
   const [closed, setClosed] = useState({});
   // 좁은 화면에서 닫혀 있으면 화면 밖에 있으므로 Tab·화면 읽기 대상에서 뺌 (열리면 다시 포함)
   const wide = useWide();
