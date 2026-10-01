@@ -32,6 +32,8 @@ const LABEL_ZOOM = 2.2; // 이 배율 이상 확대하면 모든 이름 표시
 const endId = (end) => (typeof end === "object" ? end.id : end);
 
 const FIT_PADDING = 40; // 화면 맞춤 때 남기는 여백(px)
+const GRAPH_BG = "#0b0e14"; // 그래프 영역 바탕색 (이름표 외곽선 색)
+const LABEL_OUTLINE = 4; // 이름표 외곽선 선 두께(px, 화면 기준). 글자 바깥으로 약 2px
 
 // 마우스 올리기가 없는 기기(휴대폰·태블릿)인지. 서버 렌더링에서는 false
 const HOVERLESS = "(hover: none)";
@@ -379,8 +381,14 @@ export default function GraphView({ graph: incoming, focus }) {
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         ctx.globalAlpha = (active ? (isProject || full ? 1 : 0.75) : 0.12) * appear;
+        const labelY = node.y + r + 3 / labelScale;
+        // 배경색 외곽선(글자 바깥 약 2px): 선이 글자 위를 지나가도 또렷하게. 흐려진 이름표도 같은 방식
+        ctx.lineWidth = LABEL_OUTLINE / scale;
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = GRAPH_BG;
+        ctx.strokeText(text, node.x, labelY);
         ctx.fillStyle = "#e5e7eb";
-        ctx.fillText(text, node.x, node.y + r + 3 / labelScale);
+        ctx.fillText(text, node.x, labelY);
       }
 
       ctx.restore();
