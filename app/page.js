@@ -5,6 +5,7 @@ import CopyEmail from "@/components/home/CopyEmail";
 import ClampWords from "@/components/home/ClampWords";
 import CountUp from "@/components/home/CountUp";
 import GraphTeaser from "@/components/home/GraphTeaser";
+import HeroStarfield from "@/components/home/HeroStarfield";
 import { ILLUSTRATIONS } from "@/components/illustrations";
 import { TYPE_META } from "@/components/graph/types";
 import { BoardCard, PipelineCard } from "@/components/OperationCards";
@@ -225,6 +226,8 @@ export default async function Home() {
     <div className="mx-auto max-w-[1200px] space-y-16 sm:space-y-20">
       {/* ① 소개 */}
       <section
+        id="hero"
+        data-hero
         aria-labelledby="intro-title"
         className="relative overflow-hidden rounded-3xl border border-line px-6 py-12 sm:px-10 sm:py-16 lg:px-14"
         style={{
@@ -232,34 +235,42 @@ export default async function Home() {
             "radial-gradient(60% 80% at 100% 0%, rgba(139,92,246,0.28) 0%, transparent 60%), radial-gradient(50% 70% at 0% 100%, rgba(245,158,11,0.16) 0%, transparent 60%), linear-gradient(180deg, #111624 0%, #0c1019 100%)",
         }}
       >
-        {/* 은은한 점 격자 */}
-        <div
+        {/* 별빛 우주 배경: public/hero-stars.js 가 그림 (나중에 불러옴). 글자·버튼은 아래 HTML 그대로 */}
+        <canvas
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-40 [mask-image:radial-gradient(70%_70%_at_70%_30%,black,transparent)]"
-          style={{
-            backgroundImage: "radial-gradient(rgba(255,255,255,0.14) 1px, transparent 1px)",
-            backgroundSize: "22px 22px",
-          }}
+          data-hero-stars
+          suppressHydrationWarning
+          className="pointer-events-none absolute inset-0 size-full opacity-0 transition-opacity duration-700 motion-reduce:transition-none"
         />
+        <HeroStarfield targetId="hero" />
 
         <div className="relative flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p className="label flex items-center gap-2 text-accent">
+          {/* data-star-dim: 이 영역 뒤의 별은 더 적고 어둡게, 별똥별도 피함 (public/hero-stars.js) */}
+          <div className="max-w-3xl" data-star-dim>
+            {/* hero-rise: 첫 방문 도착 연출이 걷힐 때만 차례로 떠오름 (globals.css, app/layout.js) */}
+            <p className="hero-rise label flex items-center gap-2 text-accent">
               <span className="size-1.5 rounded-full bg-accent shadow-[0_0_10px_#f59e0b]" />
               Portfolio
             </p>
-            <p className="mt-5 text-title font-semibold text-text/80">{profile.name}</p>
+            <p className="hero-rise mt-5 text-title font-semibold text-text/80" style={{ "--i": 1 }}>
+              {profile.name}
+            </p>
             <h1
               id="intro-title"
-              className="mt-2 text-page leading-[1.2] font-bold tracking-tight sm:text-display lg:text-hero lg:leading-[1.15]"
+              style={{ "--i": 2 }}
+              className="hero-rise mt-2 text-page leading-[1.2] font-bold tracking-tight sm:text-display lg:text-hero lg:leading-[1.15]"
             >
               {profile.tagline}
             </h1>
-            <p className="mt-5 text-body text-muted">{profile.subline}</p>
+            <p className="hero-rise mt-5 text-body text-muted" style={{ "--i": 3 }}>
+              {profile.subline}
+            </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="hero-rise mt-8 flex flex-wrap gap-3" style={{ "--i": 4 }}>
+              {/* data-warp: 누르면 화면 전체 워프 뒤 프로젝트 영역으로 이동 (public/hero-intro.js) */}
               <a
                 href="#projects"
+                data-warp
                 className="flex items-center gap-2 rounded-xl bg-accent min-h-11 px-5 py-2.5 text-body font-semibold text-bg shadow-[0_8px_30px_-8px_#f59e0b] transition hover:brightness-110"
               >
                 프로젝트 보기
@@ -279,7 +290,11 @@ export default async function Home() {
           </div>
 
           {/* 연결 상태 (글자와 점만) */}
-          <div className="shrink-0 rounded-2xl border border-line bg-bg/50 p-4 backdrop-blur sm:w-60">
+          <div
+            data-star-avoid
+            className="hero-rise shrink-0 rounded-2xl border border-line bg-bg/50 p-4 backdrop-blur sm:w-60"
+            style={{ "--i": 4 }}
+          >
             <p className="label flex items-center gap-2 text-green">
               <span className="relative flex size-2">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-green opacity-60 motion-reduce:animate-none" />

@@ -133,3 +133,48 @@ body {
     transform: translateY(0);
   }
 }
+
+/* 첫 방문 화면 전체 도착 연출 (app/layout.js 의 <head> 스크립트, public/hero-intro.js).
+   hub-intro: 첫 그림부터 화면 전체를 덮는 덮개(가운데 청록 빛 + 가장자리 어둡게)와 오른쪽 아래 "건너뛰기".
+             메인 화면은 덮개 아래 그대로 그려져 있음. 캔버스 연출이 도착하면 그 위를 이어받음
+   hub-reveal: 덮개가 걷힐 때 소개 문구가 PORTFOLIO → 이름 → 소개 문구 → 보조 문구 → 버튼 순서로
+               아래에서 살짝 올라오며 나타남 (끝나면 평소와 똑같은 선명도) */
+html.hub-intro body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(240, 255, 255, 0.9) 0, rgba(165, 243, 252, 0.45) 2.5%, rgba(34, 211, 238, 0.12) 9%, rgba(4, 6, 16, 0) 30%),
+    radial-gradient(circle at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.7) 100%),
+    rgb(4, 6, 16);
+}
+html.hub-intro body::after {
+  content: var(--hub-skip-label, "");
+  position: fixed;
+  right: 20px;
+  bottom: 16px;
+  z-index: 10000;
+  font-size: var(--text-caption);
+  letter-spacing: 0.08em;
+  color: rgba(226, 232, 240, 0.65);
+  pointer-events: none;
+}
+
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hub-reveal .hero-rise {
+    animation: hero-rise 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(30ms + var(--i, 0) * 70ms);
+  }
+}
