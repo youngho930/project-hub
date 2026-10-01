@@ -39,7 +39,7 @@ export default function Topbar({ projectNames, menuOpen = false, onMenu, onSearc
           aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열기"}
           aria-expanded={menuOpen}
           aria-controls="sidebar"
-          className="-ml-1.5 shrink-0 rounded-lg p-1.5 text-muted hover:bg-line/40 hover:text-text lg:hidden"
+          className="-ml-3 flex size-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-line/40 hover:text-text lg:hidden"
         >
           <Menu size={20} />
         </button>

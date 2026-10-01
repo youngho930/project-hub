@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUpRight, Share2 } from "lucide-react";
 import CopyEmail from "@/components/home/CopyEmail";
+import ClampWords from "@/components/home/ClampWords";
 import CountUp from "@/components/home/CountUp";
 import GraphTeaser from "@/components/home/GraphTeaser";
 import { ILLUSTRATIONS } from "@/components/illustrations";
@@ -85,6 +86,9 @@ const WIDE = {
   },
 };
 
+// 카드 썸네일 기준점 (빈 띠 없이 채우면서 핵심 부분이 남게). 없으면 가운데
+const THUMB_POSITION = { "inventory-dashboard": "object-left-top" };
+
 const STATUS_RANK = { "개발 중": 1, "구상 중": 2 };
 
 // 완성된 프로젝트 먼저, 개발 중·구상 중은 뒤로 (같은 단계 안에서는 order 순).
@@ -130,7 +134,9 @@ function ProjectCard({ project }) {
                 ? "(min-width: 1280px) 700px, (min-width: 640px) 60vw, 100vw"
                 : "(min-width: 1280px) 400px, (min-width: 640px) 45vw, 100vw"
             }
-            className="object-contain brightness-[0.72] saturate-[0.9] transition-[filter,transform] duration-300 group-hover:scale-[1.02] group-hover:brightness-100 group-hover:saturate-100 motion-reduce:transition-none"
+            // 카드 썸네일은 빈 띠 없이 채움. 기준점은 프로젝트마다 (자비스는 가운데 원형 화면,
+            // 재고 대시보드는 왼쪽 메뉴가 잘리지 않게 왼쪽 위). 프로젝트 화면 PREVIEW 는 잘리지 않는 방식 유지
+            className={`object-cover ${THUMB_POSITION[project.id] ?? "object-center"} brightness-[0.72] saturate-[0.9] transition-[filter,transform] duration-300 group-hover:scale-[1.02] group-hover:brightness-100 group-hover:saturate-100 motion-reduce:transition-none`}
           />
         ) : Illustration ? (
           <span className="absolute inset-0 p-3 opacity-90 transition-opacity duration-300 group-hover:opacity-100">
@@ -166,7 +172,8 @@ function ProjectCard({ project }) {
           </h3>
           <StatusBadge status={project.status} className="mt-0.5" />
         </div>
-        <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted">{project.summary}</p>
+        {/* 최대 2줄, 단어 단위로 줄이고 말줄임 */}
+        <ClampWords text={project.summary} className="mt-1.5 text-sm leading-relaxed text-muted" />
 
         {effect && (
           <p className="mt-4 flex items-baseline gap-2 text-sm">
@@ -253,7 +260,7 @@ export default async function Home() {
             <div className="mt-8 flex flex-wrap gap-3">
               <a
                 href="#projects"
-                className="flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-bg shadow-[0_8px_30px_-8px_#f59e0b] transition hover:brightness-110"
+                className="flex items-center gap-2 rounded-xl bg-accent min-h-11 px-5 py-2.5 text-sm font-semibold text-bg shadow-[0_8px_30px_-8px_#f59e0b] transition hover:brightness-110"
               >
                 프로젝트 보기
                 <ArrowDown size={15} />
@@ -262,7 +269,7 @@ export default async function Home() {
                 href={profile.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl border border-line bg-bg/60 px-5 py-2.5 text-sm font-semibold backdrop-blur transition-colors hover:border-text/30"
+                className="flex items-center gap-2 rounded-xl border border-line bg-bg/60 min-h-11 px-5 py-2.5 text-sm font-semibold backdrop-blur transition-colors hover:border-text/30"
               >
                 <GitHubMark size={15} />
                 GitHub
@@ -405,7 +412,7 @@ export default async function Home() {
             </dl>
             <Link
               href="/graph"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[#a78bfa]/40 bg-[#a78bfa]/10 px-5 py-2.5 text-sm font-semibold text-[#c4b5fd] transition-colors hover:bg-[#a78bfa]/20"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[#a78bfa]/40 bg-[#a78bfa]/10 min-h-11 px-5 py-2.5 text-sm font-semibold text-[#c4b5fd] transition-colors hover:bg-[#a78bfa]/20"
             >
               <Share2 size={15} />
               지식 그래프 보기
@@ -450,13 +457,13 @@ export default async function Home() {
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <CopyEmail
             parts={profile.emailParts}
-            className="flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-bg transition hover:brightness-110"
+            className="flex items-center gap-2 rounded-xl bg-accent min-h-11 px-5 py-2.5 text-sm font-semibold text-bg transition hover:brightness-110"
           />
           <a
             href={profile.github}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-xl border border-line bg-bg/60 px-5 py-2.5 text-sm font-semibold transition-colors hover:border-text/30"
+            className="flex items-center gap-2 rounded-xl border border-line bg-bg/60 min-h-11 px-5 py-2.5 text-sm font-semibold transition-colors hover:border-text/30"
           >
             <GitHubMark size={15} />
             GitHub

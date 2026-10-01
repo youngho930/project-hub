@@ -131,21 +131,21 @@ function CommitList({ commits }) {
   return (
     <ul className="divide-y divide-line">
       {commits.map((commit) => (
-        <li
-          key={commit.sha}
-          className="flex items-baseline gap-4 py-2.5 text-sm first:pt-0 last:pb-0"
-        >
-          <span className="min-w-0 flex-1 truncate">{commit.message}</span>
-          <span className="shrink-0 text-xs text-muted">
-            <RelativeTime iso={commit.date} />
-          </span>
+        <li key={commit.sha}>
+          {/* 줄 전체가 커밋 링크 (누르는 영역 높이 44px 이상) */}
           <a
             href={commit.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 font-mono text-xs text-accent hover:underline"
+            className="group -mx-2 flex min-h-11 items-center gap-4 rounded-md px-2 py-2 text-sm transition-colors hover:bg-line/30"
           >
-            {commit.sha}
+            <span className="min-w-0 flex-1 truncate">{commit.message}</span>
+            <span className="shrink-0 text-xs text-muted">
+              <RelativeTime iso={commit.date} />
+            </span>
+            <span className="shrink-0 font-mono text-xs text-accent group-hover:underline">
+              {commit.sha}
+            </span>
           </a>
         </li>
       ))}
@@ -240,7 +240,7 @@ export default async function ProjectPage({ params }) {
         </div>
         <Link
           href={`/graph?focus=${encodeURIComponent(project.id)}`}
-          className="flex shrink-0 items-center gap-2 rounded-lg border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-accent hover:text-accent"
+          className="flex min-h-11 shrink-0 items-center gap-2 rounded-lg border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-accent hover:text-accent"
         >
           <Network size={15} />
           그래프 보기
@@ -407,7 +407,7 @@ export default async function ProjectPage({ params }) {
                 <li key={p.id}>
                   <Link
                     href={`/projects/${p.id}`}
-                    className="inset inline-block px-3 py-1.5 text-sm hover:border-accent hover:text-accent"
+                    className="inset inline-flex min-h-11 items-center px-3 py-1.5 text-sm hover:border-accent hover:text-accent"
                   >
                     {p.name}
                   </Link>

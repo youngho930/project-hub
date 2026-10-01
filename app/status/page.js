@@ -50,7 +50,7 @@ function Donut({ percent }) {
         textAnchor="middle"
         dominantBaseline="central"
         fill="var(--color-text)"
-        fontSize="34"
+        fontSize="30"
         fontWeight="700"
       >
         {percent}

@@ -341,10 +341,11 @@ export default function GraphView({ graph: incoming, focus }) {
     // 좁은 화면: 그래프를 전체 폭·화면 높이의 65%(최소 360px)로, 정보는 바텀 시트
     <div className="flex flex-col lg:h-[calc(100vh-136px)] lg:min-h-[560px]">
       <header className="flex shrink-0 flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 max-w-full">
           <p className="label">Graph</p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight">지식 그래프</h1>
-          <ul className="mt-3 flex flex-wrap gap-1.5 text-sm">
+          {/* 좁은 화면: 넘치면 가로 스크롤 한 줄, 누르는 영역 44px / 넓은 화면: 지금처럼 */}
+          <ul className="mt-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 text-sm max-lg:[scrollbar-width:none] lg:flex-wrap lg:overflow-visible">
             {TYPE_ORDER.map((type) => {
               const off = hidden.has(type);
               const { color, label } = TYPE_META[type];
@@ -355,7 +356,7 @@ export default function GraphView({ graph: incoming, focus }) {
                     onClick={() => toggleType(type)}
                     aria-pressed={!off}
                     title={off ? "다시 보이기" : "숨기기"}
-                    className={`flex items-center gap-1.5 rounded-md px-2 py-1 transition hover:bg-line/60 ${
+                    className={`flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 transition hover:bg-line/60 lg:min-h-0 lg:px-2 ${
                       off ? "text-muted line-through opacity-50" : ""
                     }`}
                   >
@@ -433,7 +434,7 @@ export default function GraphView({ graph: incoming, focus }) {
           <button
             type="button"
             onClick={showAll}
-            className="absolute left-4 top-4 flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-line bg-bg/80 px-3 py-1.5 text-xs backdrop-blur transition-colors hover:border-accent hover:text-accent"
+            className="absolute left-4 top-4 flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg lg:min-h-0 border border-line bg-bg/80 px-3 py-1.5 text-xs backdrop-blur transition-colors hover:border-accent hover:text-accent"
           >
             <Maximize2 size={13} />
             전체 보기

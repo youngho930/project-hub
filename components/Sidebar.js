@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import StatusBadge from "./StatusBadge";
 
 // 연결 상태별 점 색
@@ -47,6 +47,16 @@ function NavLink({ href, active, Icon, badge, children, className = "" }) {
   );
 }
 
+// 넓은 화면(lg 이상)인지. 서버 렌더링에서는 넓은 화면으로 보고 사이드바를 그대로 둠
+const WIDE = "(min-width: 1024px)";
+const subscribeWide = (callback) => {
+  const query = window.matchMedia(WIDE);
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+};
+const useWide = () =>
+  useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => true);
+
 export default function Sidebar({
   groups,
   githubStatus = "미설정",
@@ -57,6 +67,24 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const [closed, setClosed] = useState({});
+  // 좁은 화면에서 닫혀 있으면 화면 밖에 있으므로 Tab·화면 읽기 대상에서 뺌 (열리면 다시 포함)
+  const wide = useWide();
+  const hiddenOffCanvas = !wide && !open;
+
+  // 좁은 화면에서 메뉴를 열면 사이드바 첫 링크로 포커스를 옮기고, 닫으면 원래 버튼으로 돌려줌
+  const asideRef = useRef(null);
+  useEffect(() => {
+    if (wide || !open) return;
+    const previous = document.activeElement;
+    const aside = asideRef.current;
+    aside?.querySelector("a[href], button")?.focus();
+    return () => {
+      const lost = document.activeElement === document.body || aside?.contains(document.activeElement);
+      if (previous instanceof HTMLElement && lost) {
+        previous.focus();
+      }
+    };
+  }, [wide, open]);
 
   const sources = [
     { name: "GitHub", Icon: GitBranch, status: githubStatus },
@@ -70,7 +98,10 @@ export default function Sidebar({
   return (
     // 좁은 화면(lg 미만)에서는 왼쪽 밖에 숨어 있다가 open 이면 밀려 들어옴
     <aside
+      ref={asideRef}
       id="sidebar"
+      inert={hiddenOffCanvas}
+      aria-hidden={hiddenOffCanvas || undefined}
       className={`fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-y-auto border-r border-line bg-bg px-4 py-5 transition-transform duration-200 motion-reduce:transition-none lg:translate-x-0 ${
         open ? "translate-x-0" : "-translate-x-full"
       }`}
