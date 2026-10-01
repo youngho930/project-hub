@@ -4,6 +4,7 @@ import { getCalendarSummary } from "@/lib/calendar";
 import { getGitHubStatus } from "@/lib/github";
 import { getPipeline } from "@/lib/pipeline";
 import { getGroups } from "@/lib/projects";
+import { getSearchIndex } from "@/lib/search";
 import { rootMetadata } from "@/lib/site";
 
 // 제목·설명·링크 미리보기(openGraph, 트위터 카드). 내용은 lib/site.js (data/profile.json 기반)
@@ -43,6 +44,8 @@ export default async function RootLayout({ children }) {
             pipelineStatus: pipeline.status,
           }}
           projectNames={projectNames}
+          // 검색 창용: 이름·요약·기술·결정 문장만 (저장소·커밋·이메일 없음)
+          searchIndex={getSearchIndex()}
         >
           {children}
         </Shell>

@@ -34,12 +34,10 @@ export default async function GraphPage({ searchParams }) {
     }),
   };
 
-  // 없는 프로젝트 id로 들어오면 포커스 없이 전체 보기
-  const focusId =
-    typeof focus === "string" &&
-    graph.nodes.some((node) => node.id === `project:${focus}`)
-      ? focus
-      : null;
+  // ?focus=jarvis (프로젝트) 또는 ?focus=tech:Python (기술 노드). 없는 노드면 포커스 없이 전체 보기
+  const candidate =
+    typeof focus !== "string" ? null : focus.startsWith("tech:") ? focus : `project:${focus}`;
+  const focusId = graph.nodes.some((node) => node.id === candidate) ? candidate : null;
 
   return <GraphView graph={graph} focus={focusId} />;
 }

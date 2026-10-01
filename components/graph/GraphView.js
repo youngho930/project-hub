@@ -88,7 +88,8 @@ export default function GraphView({ graph: incoming, focus }) {
   if (focusCleared && !focus) setFocusCleared(false);
   const activeFocus = focusCleared ? null : focus;
 
-  const focusNodeId = activeFocus ? `project:${activeFocus}` : null;
+  // focus 는 노드 id 그대로 ("project:jarvis", "tech:Python")
+  const focusNodeId = activeFocus ?? null;
   const [selectedId, setSelectedId] = useState(focusNodeId);
 
   // 포커스가 바뀌면 패널도 그 프로젝트로 (전체 보기면 비움)

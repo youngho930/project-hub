@@ -2,14 +2,29 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import CommandPalette from "./search/CommandPalette";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
 // 사이드바 + 상단 바 + 본문 틀.
 // 넓은 화면(lg 이상)은 사이드바 고정, 좁은 화면은 햄버거 버튼으로 여닫는 메뉴.
-export default function Shell({ sidebar, projectNames, children }) {
+export default function Shell({ sidebar, projectNames, searchIndex, children }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Ctrl+K / ⌘+K 로 검색 창 열고 닫기. 입력칸 안에서도 브라우저 기본 동작(주소창 검색) 대신 이 창을 엶
+  useEffect(() => {
+    const onKey = (event) => {
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setMenuOpen(false);
+        setSearchOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // 다른 화면으로 이동하면 메뉴 닫기
   const [prevPath, setPrevPath] = useState(pathname);
@@ -46,9 +61,15 @@ export default function Shell({ sidebar, projectNames, children }) {
           projectNames={projectNames}
           menuOpen={menuOpen}
           onMenu={() => setMenuOpen((open) => !open)}
+          onSearch={() => setSearchOpen(true)}
         />
         <main className="px-4 py-8 sm:px-6 lg:px-10 lg:py-10">{children}</main>
       </div>
+      <CommandPalette
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        index={searchIndex}
+      />
     </>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronRight, Menu } from "lucide-react";
+import { ChevronRight, Menu, Search } from "lucide-react";
+import { useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 
 function crumbsFor(pathname, projectNames) {
@@ -13,8 +14,17 @@ function crumbsFor(pathname, projectNames) {
   return [];
 }
 
-// 검색창은 다음 작업에서 실제 기능으로 만들 때 다시 추가 (오른쪽 live 배지는 없앰)
-export default function Topbar({ projectNames, menuOpen = false, onMenu }) {
+// 맥이면 ⌘, 그 밖은 Ctrl (서버 렌더링에서는 Ctrl)
+const isMac = () => /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const useShortcutLabel = () =>
+  useSyncExternalStore(
+    () => () => {},
+    () => (isMac() ? "⌘ K" : "Ctrl K"),
+    () => "Ctrl K"
+  );
+
+export default function Topbar({ projectNames, menuOpen = false, onMenu, onSearch }) {
+  const shortcut = useShortcutLabel();
   const pathname = usePathname();
   // 첫 화면은 "홈" 하나, 다른 화면은 "홈 > …"
   const crumbs = ["홈", ...crumbsFor(pathname, projectNames)];
@@ -63,6 +73,21 @@ export default function Topbar({ projectNames, menuOpen = false, onMenu }) {
           </ol>
         </nav>
       </div>
+
+      {/* 검색: 넓은 화면은 글자와 단축키, 좁은 화면은 돋보기만 (누르는 영역 44px) */}
+      <button
+        type="button"
+        onClick={onSearch}
+        aria-label="검색 (Ctrl+K)"
+        aria-keyshortcuts="Control+K Meta+K"
+        className="ml-auto flex size-11 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-line/40 hover:text-text focus-visible:outline-2 focus-visible:outline-accent sm:h-9 sm:w-56 sm:justify-start sm:gap-2 sm:border sm:border-line sm:bg-card sm:px-3 sm:text-sm"
+      >
+        <Search size={18} className="sm:size-[15px]" />
+        <span className="hidden sm:inline">검색</span>
+        <kbd className="ml-auto hidden rounded border border-line bg-inset px-1.5 py-0.5 font-sans text-[10px] sm:inline">
+          {shortcut}
+        </kbd>
+      </button>
     </header>
   );
 }

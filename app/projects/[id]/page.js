@@ -369,7 +369,12 @@ export default async function ProjectPage({ params }) {
           <Section en="Decisions" ko="결정">
             <ol className="space-y-3">
               {project.decisions.map((decision, i) => (
-                <li key={i} className="inset p-5">
+                // 검색 창에서 결정을 고르면 #decision-N 으로 이 카드까지 스크롤
+                <li
+                  key={i}
+                  id={`decision-${i + 1}`}
+                  className="inset scroll-mt-20 p-5 transition-colors target:border-accent/60 target:bg-accent/5"
+                >
                   <dl>
                     {!isEmpty(decision.what) && (
                       <Row label="What">
