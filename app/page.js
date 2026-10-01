@@ -485,6 +485,15 @@ export default async function Home() {
             <ArrowUpRight size={14} className="text-muted" />
           </a>
         </div>
+        {/* 첫 방문 도착 연출 다시 보기: ?intro 로 새로 불러옴 (app/layout.js). 움직임 줄이기면 연출이 없으므로 숨김.
+            연출은 문서를 새로 불러올 때만 재생되므로 <Link>(화면 안 이동) 대신 <a> 로 전체 새로 고침 */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a
+          href="/?intro"
+          className="mt-5 inline-flex min-h-11 items-center px-2 text-caption text-muted underline-offset-4 transition-colors hover:text-text hover:underline motion-reduce:hidden"
+        >
+          인트로 다시 보기
+        </a>
       </section>
     </div>
   );

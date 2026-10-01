@@ -135,29 +135,72 @@ body {
 }
 
 /* 첫 방문 화면 전체 도착 연출 (app/layout.js 의 <head> 스크립트, public/hero-intro.js).
-   hub-intro: 첫 그림부터 화면 전체를 덮는 덮개(가운데 청록 빛 + 가장자리 어둡게)와 오른쪽 아래 "건너뛰기".
+   hub-cover: 첫 그림부터 화면 전체를 덮는 덮개(어두운 바탕 + 가장자리 어둡게)와 숨 쉬는 가운데 빛.
+              캔버스 연출이 완전히 나타나면(0.35초) 가려져 있던 이 덮개를 미리 뗌 (원이 열리는 순간의 일을 줄임)
+   hub-intro: 연출 중 표시. 오른쪽 아래 "건너뛰기" 와 떠오를 글자 준비.
              메인 화면은 덮개 아래 그대로 그려져 있음. 캔버스 연출이 도착하면 그 위를 이어받음
    hub-reveal: 덮개가 걷힐 때 소개 문구가 PORTFOLIO → 이름 → 소개 문구 → 보조 문구 → 버튼 순서로
                아래에서 살짝 올라오며 나타남 (끝나면 평소와 똑같은 선명도) */
-html.hub-intro body::before {
+html.hub-cover body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 9998;
   background:
-    radial-gradient(circle at 50% 50%, rgba(240, 255, 255, 0.9) 0, rgba(165, 243, 252, 0.45) 2.5%, rgba(34, 211, 238, 0.12) 9%, rgba(4, 6, 16, 0) 30%),
     radial-gradient(circle at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.7) 100%),
     rgb(4, 6, 16);
 }
+/* 정지된 덮개 동안 가운데 빛이 숨 쉬듯 밝아졌다 어두워짐 (주기 1.2초, transform·opacity 만 → 메인 스레드를 쓰지 않음).
+   연출이 움직이기 시작하면 캔버스 오버레이(z-index 10000, public/hero-intro.js)가 0.3초 동안 나타나며
+   이 빛을 덮고 캔버스의 가운데 빛이 이어받음 */
+html.hub-cover::before {
+  --hub-glow-size: min(64vmin, 560px);
+  content: "";
+  position: fixed;
+  left: calc(50% - var(--hub-glow-size) / 2);
+  top: calc(50% - var(--hub-glow-size) / 2);
+  z-index: 9999;
+  width: var(--hub-glow-size);
+  height: var(--hub-glow-size);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(240, 255, 255, 0.95) 0,
+    rgba(165, 243, 252, 0.5) 8%,
+    rgba(34, 211, 238, 0.16) 24%,
+    rgba(34, 211, 238, 0) 60%
+  );
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: hub-breathe 1.2s ease-in-out infinite;
+}
+@keyframes hub-breathe {
+  0%,
+  100% {
+    transform: scale(0.86);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+/* 오른쪽 아래 "건너뛰기" 표시: 휴대폰에서도 읽히게 14px·흰 글자·반투명 바탕 (대비 약 15:1).
+   누르는 곳이 따로 있지 않고 화면 아무 곳 클릭·탭·아무 키가 건너뛰기 (app/layout.js) */
 html.hub-intro body::after {
   content: var(--hub-skip-label, "");
   position: fixed;
-  right: 20px;
-  bottom: 16px;
-  z-index: 10000;
-  font-size: var(--text-caption);
-  letter-spacing: 0.08em;
-  color: rgba(226, 232, 240, 0.65);
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 10001;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: var(--text-body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   pointer-events: none;
 }
 
@@ -170,6 +213,13 @@ html.hub-intro body::after {
     opacity: 1;
     transform: none;
   }
+}
+
+/* 연출이 덮고 있는 동안 떠오를 글자들을 미리 따로 움직일 층으로 준비해 둠:
+   열리는 순간 6줄을 한꺼번에 새로 준비하느라 프레임이 밀리지 않게 (끝나면 hub-reveal 과 함께 풀림) */
+html.hub-intro .hero-rise,
+html.hub-reveal .hero-rise {
+  will-change: transform, opacity;
 }
 
 @media (prefers-reduced-motion: no-preference) {

@@ -32,6 +32,15 @@
     [56, 189, 248],
   ];
   var SITE_BG = [11, 14, 20];
+  // 메인 히어로 카드의 보라 (app/page.js 소개 카드 배경 radial-gradient 의 rgba(139,92,246,0.28) = #8b5cf6).
+  // 섬광이 가장 밝은 뒤부터 섬광·플레어·가운데 빛이 청록에서 이 색으로 옮겨 가 메인 화면과 이어짐
+  var HERO_VIOLET = [139, 92, 246];
+  function toWhite(c, k) {
+    return [Math.round(c[0] + (255 - c[0]) * k), Math.round(c[1] + (255 - c[1]) * k), Math.round(c[2] + (255 - c[2]) * k)];
+  }
+  function mixColor(a, b, k) {
+    return [Math.round(a[0] + (b[0] - a[0]) * k), Math.round(a[1] + (b[1] - a[1]) * k), Math.round(a[2] + (b[2] - a[2]) * k)];
+  }
   var Z_FAR = 3.6; // 가장 먼 깊이 (클수록 소실점 둘레가 촘촘)
   // 빛줄기 깊이 층: 먼 것은 가늘고 선명, 가까운 것은 굵고 흐릿
   var DEPTHS = [
@@ -110,7 +119,7 @@
   function run(opts) {
     var canvas = document.createElement("canvas");
     canvas.setAttribute("aria-hidden", "true");
-    canvas.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;z-index:9999;pointer-events:none;opacity:1";
+    canvas.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;z-index:10000;pointer-events:none;opacity:" + (opts.fadeIn ? 0 : 1);
     document.body.appendChild(canvas);
     var ctx = canvas.getContext("2d");
     var w = innerWidth, h = innerHeight;
@@ -140,34 +149,63 @@
     vctx.fillRect(0, 0, w, h);
 
     // 섬광과 가로 렌즈 플레어도 한 번만 그려 두고 매 프레임 투명도만 바꿔 얹음
-    // (화면 전체 그라데이션을 매 프레임 새로 그리면 가장 밝은 순간에 프레임이 떨어짐)
-    var flashImg = document.createElement("canvas");
-    flashImg.width = Math.ceil(w / 2);
-    flashImg.height = Math.ceil(h / 2);
-    var fctx = flashImg.getContext("2d");
-    var fg = fctx.createRadialGradient(w / 4, h / 4, 0, w / 4, h / 4, (D * 0.95) / 2);
-    fg.addColorStop(0, "rgba(255,255,255,1)");
-    fg.addColorStop(0.1, "rgba(236,254,255,0.95)");
-    fg.addColorStop(0.28, "rgba(165,243,252,0.55)");
-    fg.addColorStop(0.55, "rgba(34,150,220,0.16)");
-    fg.addColorStop(1, "rgba(30,60,140,0)");
-    fctx.fillStyle = fg;
-    fctx.fillRect(0, 0, flashImg.width, flashImg.height);
-    var flareImg = document.createElement("canvas");
-    flareImg.width = Math.ceil(w);
-    flareImg.height = 14;
-    var lctx = flareImg.getContext("2d");
-    var lg = lctx.createLinearGradient(0, 0, w, 0);
-    lg.addColorStop(0, "rgba(56,189,248,0)");
-    lg.addColorStop(0.3, "rgba(103,232,249,0.35)");
-    lg.addColorStop(0.5, "rgba(255,255,255,1)");
-    lg.addColorStop(0.7, "rgba(103,232,249,0.35)");
-    lg.addColorStop(1, "rgba(56,189,248,0)");
-    lctx.fillStyle = lg;
-    lctx.globalAlpha = 0.25;
-    lctx.fillRect(0, 0, w, 14);
-    lctx.globalAlpha = 1;
-    lctx.fillRect(0, 6, w, 2);
+    // (화면 전체 그라데이션을 매 프레임 새로 그리면 가장 밝은 순간에 프레임이 떨어짐).
+    // 청록판과 보라판을 따로 그려 두고, 색 변화는 두 장의 투명도만 바꿔 겹침
+    function makeFlash(stops) {
+      var img = document.createElement("canvas");
+      img.width = Math.ceil(w / 2);
+      img.height = Math.ceil(h / 2);
+      var g2 = img.getContext("2d");
+      var gr = g2.createRadialGradient(w / 4, h / 4, 0, w / 4, h / 4, (D * 0.95) / 2);
+      for (var q = 0; q < stops.length; q++) gr.addColorStop(stops[q][0], stops[q][1]);
+      g2.fillStyle = gr;
+      g2.fillRect(0, 0, img.width, img.height);
+      return img;
+    }
+    function makeFlare(edge, mid) {
+      var img = document.createElement("canvas");
+      img.width = Math.ceil(w);
+      img.height = 14;
+      var g2 = img.getContext("2d");
+      var gr = g2.createLinearGradient(0, 0, w, 0);
+      gr.addColorStop(0, rgba(edge, 0));
+      gr.addColorStop(0.3, rgba(mid, 0.35));
+      gr.addColorStop(0.5, "rgba(255,255,255,1)");
+      gr.addColorStop(0.7, rgba(mid, 0.35));
+      gr.addColorStop(1, rgba(edge, 0));
+      g2.fillStyle = gr;
+      g2.globalAlpha = 0.25;
+      g2.fillRect(0, 0, w, 14);
+      g2.globalAlpha = 1;
+      g2.fillRect(0, 6, w, 2);
+      return img;
+    }
+    var flashImg = makeFlash([
+      [0, "rgba(255,255,255,1)"],
+      [0.1, "rgba(236,254,255,0.95)"],
+      [0.28, "rgba(165,243,252,0.55)"],
+      [0.55, "rgba(34,150,220,0.16)"],
+      [1, "rgba(30,60,140,0)"],
+    ]);
+    var flashVioletImg = makeFlash([
+      [0, "rgba(255,255,255,1)"],
+      [0.1, rgba(toWhite(HERO_VIOLET, 0.88), 0.95)],
+      [0.28, rgba(toWhite(HERO_VIOLET, 0.45), 0.55)],
+      [0.55, rgba(HERO_VIOLET, 0.16)],
+      [1, rgba(HERO_VIOLET, 0)],
+    ]);
+    var flareImg = makeFlare([56, 189, 248], [103, 232, 249]);
+    var flareVioletImg = makeFlare(HERO_VIOLET, toWhite(HERO_VIOLET, 0.5));
+    // 원형 전환: 가운데는 불투명하고 가장자리 7%가 부드러운 원. 크기만 키워 오버레이에 구멍을 냄
+    var holeImg = document.createElement("canvas");
+    holeImg.width = holeImg.height = 256;
+    var hctx = holeImg.getContext("2d");
+    var hg = hctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    hg.addColorStop(0, "rgba(0,0,0,1)");
+    hg.addColorStop(0.93, "rgba(0,0,0,1)");
+    hg.addColorStop(1, "rgba(0,0,0,0)");
+    hctx.fillStyle = hg;
+    hctx.fillRect(0, 0, 256, 256);
 
     // 빛줄기 묶음: [색][깊이층 × 2 밝기][토막] → 좌표 목록
     var buckets = [];
@@ -313,31 +351,72 @@
       if (core > 0) {
         var cr = M * (0.05 + 0.1 * core);
         var cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr * 5);
-        cg.addColorStop(0, "rgba(245,255,255," + Math.min(1, 0.95 * core + 0.2) + ")");
-        cg.addColorStop(0.1, "rgba(165,243,252," + 0.8 * core + ")");
-        cg.addColorStop(0.35, "rgba(34,211,238," + 0.25 * core + ")");
-        cg.addColorStop(1, "rgba(59,130,246,0)");
+        var vi = tl.violet || 0;
+        cg.addColorStop(0, rgba(mixColor([245, 255, 255], toWhite(HERO_VIOLET, 0.9), vi), Math.min(1, 0.95 * core + 0.2)));
+        cg.addColorStop(0.1, rgba(mixColor([165, 243, 252], toWhite(HERO_VIOLET, 0.45), vi), 0.8 * core));
+        cg.addColorStop(0.35, rgba(mixColor([34, 211, 238], HERO_VIOLET, vi), 0.25 * core));
+        cg.addColorStop(1, rgba(mixColor([59, 130, 246], HERO_VIOLET, vi), 0));
         ctx.fillStyle = cg;
         ctx.fillRect(cx - cr * 5, cy - cr * 5, cr * 10, cr * 10); // 빛이 닿는 곳만
       }
 
       // 섬광: 가운데는 하얗게 강렬하고 가장자리로 갈수록 빠르게 어두워지는 방사형
       var f = tl.flash;
+      var v = tl.violet || 0;
       if (f > 0) {
-        ctx.globalAlpha = Math.min(1, f);
-        ctx.drawImage(flashImg, 0, 0, w, h);
+        if (v < 1) {
+          ctx.globalAlpha = Math.min(1, f) * (1 - v);
+          ctx.drawImage(flashImg, 0, 0, w, h);
+        }
+        if (v > 0) {
+          ctx.globalAlpha = Math.min(1, f) * v;
+          ctx.drawImage(flashVioletImg, 0, 0, w, h);
+        }
         ctx.globalAlpha = 1;
       }
       // 가로 렌즈 플레어: 소실점을 가로지르는 얇고 긴 빛줄기
       var fl = tl.flare;
       if (fl > 0) {
-        ctx.globalAlpha = Math.min(1, fl);
-        ctx.drawImage(flareImg, 0, cy - 7, w, 14);
+        if (v < 1) {
+          ctx.globalAlpha = Math.min(1, fl) * (1 - v);
+          ctx.drawImage(flareImg, 0, cy - 7, w, 14);
+        }
+        if (v > 0) {
+          ctx.globalAlpha = Math.min(1, fl) * v;
+          ctx.drawImage(flareVioletImg, 0, cy - 7, w, 14);
+        }
         ctx.globalAlpha = 1;
       }
 
       ctx.globalCompositeOperation = "source-over";
       ctx.drawImage(vignette, 0, 0, w, h);
+
+      // 원형으로 열리는 전환: 가운데 빛에서 원이 퍼지며 오버레이에 구멍이 남 (흐리게 겹치는 중간 단계 없음)
+      var hole = tl.hole || 0;
+      if (hole > 0) {
+        var R = D * 1.1 * (0.5 - 0.5 * Math.cos(Math.PI * hole));
+        if (R > 0.5) {
+          ctx.globalCompositeOperation = "destination-out";
+          ctx.drawImage(holeImg, cx - R, cy - R, R * 2, R * 2);
+          // 원 가장자리의 보라빛 고리: 어두운 구멍이 아니라 빛이 열리는 느낌으로 (열릴수록 옅어짐)
+          var ring = 0.7 * (1 - hole);
+          if (ring > 0.02) {
+            var rc = toWhite(HERO_VIOLET, 0.35);
+            ctx.globalCompositeOperation = "lighter";
+            ctx.strokeStyle = rgba(rc, ring * 0.3);
+            ctx.lineWidth = Math.max(3, R * 0.08);
+            ctx.beginPath();
+            ctx.arc(cx, cy, R * 0.96, 0, 6.2832);
+            ctx.stroke();
+            ctx.strokeStyle = rgba(rc, ring);
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, R * 0.965, 0, 6.2832);
+            ctx.stroke();
+          }
+          ctx.globalCompositeOperation = "source-over";
+        }
+      }
       canvas.style.opacity = String(tl.opacity);
     }
 
@@ -377,21 +456,16 @@
       canvas.remove();
       vignette.width = vignette.height = 0;
       flashImg.width = flashImg.height = flareImg.width = flareImg.height = 0;
+      flashVioletImg.width = flashVioletImg.height = flareVioletImg.width = flareVioletImg.height = 0;
+      holeImg.width = holeImg.height = 0;
       buckets = streaks = shards = null;
       if (opts.onEnd) opts.onEnd();
     }
-    // 건너뛰기: 0.18초 만에 걷힘 (아직 시작 전이면 바로 없앰)
+    // 건너뛰기: 즉시 오버레이를 없애고 메인 화면으로
     function skip() {
       if (done) return;
-      if (!begun) { finish(); return; }
-      var from = Number(canvas.style.opacity) || 1;
-      var s0 = performance.now();
-      opts.timeline = function () {
-        var k = clamp01((performance.now() - s0) / 180);
-        return { speed: 1, elements: 1 - k, core: 0, flash: 0, flare: 0, toSite: 1, opacity: from * (1 - k) };
-      };
-      opts.duration = (performance.now() - start) / 1000 + 0.2;
       if (opts.onSkip) opts.onSkip();
+      finish();
     }
 
     // 첫 장면을 미리 그려 둠: 새 캔버스를 처음 그릴 때의 초기화 멈춤이 움직이기 전(정지 장면)에 생기게
@@ -399,6 +473,7 @@
     function begin() {
       if (begun || done) return;
       begun = true;
+      if (opts.onBegin) opts.onBegin();
       start = last = performance.now();
       frame = requestAnimationFrame(tick);
     }
@@ -406,27 +481,33 @@
     // 처음 보는 그라데이션을 화면에 그릴 때의 일회성 준비 비용(가장 밝은 순간의 30~50ms 멈춤)을 미리 치름
     var real = opts.timeline;
     opts.timeline = function () {
-      return { speed: 97, core: 1, flash: 0.002, flare: 0.002, elements: 0.002, toSite: 0.002, opacity: 1 };
+      return { speed: 97, core: 1, flash: 0.002, flare: 0.002, violet: 0.5, hole: 0.02, elements: 0.002, toSite: 0.002, opacity: 1 };
     };
     draw(0, 0);
     opts.timeline = real;
     draw(0, 0);
+    if (opts.fadeIn) canvas.style.opacity = "0";
     if (!opts.deferStart) begin();
     return { skip: skip, finish: finish, begin: begin };
   }
 
-  // 도착 연출 흐름 (초): 0~1.25 점점 빨라짐 → 1.29 가장 밝음(짧게) → 1.34 걷히기 시작(글자 떠오름) → 1.74 끝
-  var REVEAL_AT = 1.34;
+  // 도착 연출 흐름 (초): 0~1.25 점점 빨라짐 → 1.29 가장 밝음(짧게) → 1.28부터 청록에서 히어로 보라로
+  // → 1.30 가운데에서 원이 퍼지며 열리기 시작(글자 떠오름) → 1.80 다 열림 → 1.82 끝
+  var REVEAL_AT = 1.3;
+  var OPEN_SEC = 0.5;
   function introTimeline(t) {
     var acc = clamp01(t / 1.25);
     return {
       speed: t < 1.25 ? 10 + 87 * Math.pow(acc, 1.8) : 97 * (1 - clamp01((t - 1.25) / 0.2)),
       core: Math.min(1, 0.35 + 0.65 * Math.pow(acc, 1.5)) * (t < 1.32 ? 1 : 1 - clamp01((t - 1.32) / 0.14)),
       flash: bell(t, 1.22, 1.29, 1.39),
-      flare: 0.95 * bell(t, 1.2, 1.29, 1.46),
+      flare: 0.95 * bell(t, 1.2, 1.29, 1.4), // 원이 제목·숫자 영역에 닿기 전에 사라짐
+      violet: clamp01((t - 1.28) / 0.12), // 섬광이 사라지기 전(1.40)에 다 옮겨 감
+      hole: clamp01((t - REVEAL_AT) / OPEN_SEC),
       elements: t < 1.28 ? 1 : 1 - clamp01((t - 1.28) / 0.14),
       toSite: clamp01((t - 1.3) / 0.12),
-      opacity: t < REVEAL_AT ? 1 : 1 - clamp01((t - REVEAL_AT) / 0.38),
+      // 처음 0.3초 동안 캔버스가 나타나며 CSS 의 숨 쉬는 가운데 빛을 덮어 이어받음 (투명도만 바뀜)
+      opacity: clamp01(t / 0.3),
     };
   }
 
@@ -450,6 +531,9 @@
     var root = document.documentElement;
     if (intro || !root.classList.contains("hub-intro") || reducedQuery.matches || !document.body) return;
     var revealed = false;
+    var coverOff = false;
+    // 연출이 완전히 끝날 때까지 다른 무거운 일(소개 카드 별 배경 시작 등)을 미루도록 알림
+    window.__hubIntroRunning = true;
     function reveal() {
       if (revealed) return;
       revealed = true;
@@ -457,14 +541,21 @@
     }
     intro = run({
       deferStart: true,
-      duration: REVEAL_AT + 0.4,
+      duration: REVEAL_AT + OPEN_SEC + 0.02,
       timeline: introTimeline,
       onTime: function (t) {
+        // 캔버스가 완전히 나타난 뒤에는 가려진 CSS 덮개를 미리 뗌 (원이 열리는 순간의 일을 줄임)
+        if (t >= 0.35 && !coverOff) {
+          coverOff = true;
+          document.documentElement.classList.remove("hub-cover");
+        }
         if (t >= REVEAL_AT) reveal();
       },
+      fadeIn: true,
       onSkip: reveal,
       onEnd: function () {
         reveal();
+        window.__hubIntroRunning = false;
         if (window.__hubIntroEnd) window.__hubIntroEnd();
       },
     });

@@ -29,8 +29,8 @@ export default function HeroStarfield({ targetId }) {
     if (!section) return;
     let cancelled = false;
     const run = () => {
-      // 화면 전체 도착 연출 중이면 끝난 뒤에 (연출 프레임을 빼앗지 않게)
-      if (document.documentElement.classList.contains("hub-intro")) {
+      // 화면 전체 도착 연출 중이면(원이 열리는 동안 포함) 완전히 끝난 뒤에 (연출 프레임을 빼앗지 않게)
+      if (document.documentElement.classList.contains("hub-intro") || window.__hubIntroRunning) {
         timer = setTimeout(run, 300);
         return;
       }
