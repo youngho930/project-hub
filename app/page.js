@@ -32,7 +32,7 @@ const DOT_COLOR = {
   연결됨: "bg-green",
   오류: "bg-red",
   미설정: "bg-muted/50",
-  지연: "bg-orange",
+  대기: "bg-muted/50", // Job Jarvis: PC 가 꺼져 수집이 멈춘 정상 상태 (lib/pipeline.js)
 };
 
 function GitHubMark({ size = 16 }) {
@@ -244,7 +244,7 @@ export default async function Home() {
     getPipeline(),
   ]);
   // LIVE 패널: 연결돼 있고 값을 받았으면 짧은 실제 정보, 아니면 지금처럼 상태 글자
-  const isUp = (status) => status === "연결됨" || status === "지연";
+  const isUp = (status) => status === "연결됨";
   // 최근 커밋이 7일보다 오래됐거나(github.recent) 개수가 0이면 숫자 대신 "연결됨"
   // (오래된 날짜·0 이 오히려 멈춘 것처럼 보이지 않게)
   const sources = [
@@ -295,7 +295,8 @@ export default async function Home() {
         {/* md 이상(왼쪽 메뉴가 접히는 폭 포함)이면 LIVE 패널을 오른쪽에 둠 → 카드 오른쪽 절반이 비지 않게 */}
         <div className="relative flex flex-col gap-7 sm:gap-10 md:flex-row md:items-end md:justify-between md:gap-8">
           {/* data-star-dim: 이 영역 뒤의 별은 더 적고 어둡게, 별똥별도 피함 (public/hero-stars.js) */}
-          <div className="max-w-3xl min-w-0" data-star-dim>
+          {/* @container: 제목 글자 크기를 이 칸 폭에 맞춤 (아래 h1 의 cqw). md 이상에서는 남는 폭을 채움 */}
+          <div className="@container max-w-3xl min-w-0 md:flex-1" data-star-dim>
             {/* hero-rise: 첫 방문 도착 연출이 걷힐 때만 차례로 떠오름 (globals.css, app/layout.js) */}
             <p className="hero-rise label flex items-center gap-2 text-accent">
               <span className="size-1.5 rounded-full bg-accent shadow-[0_0_10px_#f59e0b]" />
@@ -307,9 +308,18 @@ export default async function Home() {
             <h1
               id="intro-title"
               style={{ "--i": 2 }}
-              className="hero-rise mt-2 text-page leading-[1.2] font-bold tracking-tight sm:text-display lg:text-hero lg:leading-[1.15]"
+              // md 이상: 칸 폭(cqw)에 맞춰 줄이되 최대는 그대로(48px / lg 56px). 첫 덩어리 "현장의 반복 업무를"(약 7.1글자 폭)가
+              // 항상 한 줄에 들어가게 해 왼쪽 메뉴·LIVE 패널이 함께 있는 좁은 칸에서도 3줄을 넘지 않음
+              className="hero-rise mt-2 text-page leading-[1.2] font-bold tracking-tight sm:text-display md:text-[clamp(32px,13.7cqw,48px)] lg:text-[clamp(36px,13.7cqw,56px)] lg:leading-[1.15]"
             >
-              {profile.tagline}
+              {/* 의미 단위 줄바꿈: 두 덩어리("현장의 반복 업무를" / "직접 찾아 자동화합니다")를 각각 한 묶음으로,
+                  덩어리 안에서 더 끊길 때도 "반복 업무"는 줄바꿈 없는 공백으로 붙어 있음 (data/profile.json) */}
+              {(profile.taglineLines ?? [profile.tagline]).map((line, i) => (
+                <span key={line}>
+                  {i > 0 && " "}
+                  <span className="inline-block">{line}</span>
+                </span>
+              ))}
             </h1>
             <p className="hero-rise mt-5 text-body text-muted" style={{ "--i": 3 }}>
               {profile.subline}

@@ -87,7 +87,7 @@ export function PipelineCard({ pipeline }) {
   const connected =
     pipeline.status === PIPELINE_STATUS.connected ||
     pipeline.status === PIPELINE_STATUS.stale;
-  // 2일 넘게 갱신이 없으면(지연) 오래된 날짜 대신 상황 설명: Job Jarvis 는 PC 작업 스케줄러로 돌아 PC 를 켤 때 수집함
+  // 2일 넘게 갱신이 없으면(대기) 오래된 날짜 대신 상황 설명: Job Jarvis 는 PC 작업 스케줄러로 돌아 PC 를 켤 때 수집함
   const lastRun =
     pipeline.status === PIPELINE_STATUS.stale
       ? { label: "다음 수집", Icon: RefreshCw, value: "PC 실행 시 자동 수집" }
@@ -98,15 +98,16 @@ export function PipelineCard({ pipeline }) {
       total={
         connected && (
           <span className="flex items-baseline gap-1">
-            <span className="text-title font-bold tabular-nums">{pipeline.saved}</span>
-            <span className="text-caption text-muted">건 저장</span>
+            {/* 0건이면 "0" 대신 "—" (수집이 막 시작됐거나 비어 있을 때 멈춘 것처럼 보이지 않게) */}
+            <span className="text-title font-bold tabular-nums">{pipeline.saved > 0 ? pipeline.saved : "—"}</span>
+            {pipeline.saved > 0 && <span className="text-caption text-muted">건 저장</span>}
           </span>
         )
       }
       error={pipeline.status === PIPELINE_STATUS.error}
       caption={
         connected
-          ? "Job Jarvis · 10분마다 갱신"
+          ? "Job Jarvis 연동"
           : pipeline.status === PIPELINE_STATUS.unset
             ? "공고 수집 연결 전"
             : "공고 수집 현황 불러오기 실패"

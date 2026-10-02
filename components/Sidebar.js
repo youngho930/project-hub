@@ -24,7 +24,7 @@ const DOT_COLOR = {
   연결됨: "bg-green",
   오류: "bg-red",
   미설정: "bg-muted/50",
-  지연: "bg-orange",
+  대기: "bg-muted/50", // Job Jarvis: PC 가 꺼져 수집이 멈춘 정상 상태
 };
 
 function NavLink({ href, active, Icon, badge, children, className = "" }) {

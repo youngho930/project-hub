@@ -1,6 +1,7 @@
 {
   "name": "신영호",
   "tagline": "현장의 반복 업무를 직접 찾아 자동화합니다",
+  "taglineLines": ["현장의 반복 업무를", "직접 찾아 자동화합니다"],
   "subline": "QC 1년 7개월 · Python · ERP 연동 · AI 에이전트",
   "github": "https://github.com/youngho930",
   "highlights": [
