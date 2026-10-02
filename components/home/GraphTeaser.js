@@ -77,10 +77,15 @@ export default function GraphTeaser({ graph }) {
         const r = DOT[node.type] ?? 2;
         return (
           <g key={node.id}>
-            {node.type === "project" && (
+            {node.type === "project" && !node.idea && (
               <circle cx={p.x} cy={p.y} r={r + 5} fill={color} opacity="0.45" filter="url(#teaser-blur)" />
             )}
-            <circle cx={p.x} cy={p.y} r={r} fill={color} />
+            {/* 구상 중 프로젝트: 빛 없이 점선 테두리 (지식 그래프와 같은 표시) */}
+            {node.idea ? (
+              <circle cx={p.x} cy={p.y} r={r - 0.6} fill={color} fillOpacity="0.15" stroke={color} strokeWidth="1.2" strokeDasharray="2 1.6" />
+            ) : (
+              <circle cx={p.x} cy={p.y} r={r} fill={color} />
+            )}
           </g>
         );
       })}

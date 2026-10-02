@@ -197,7 +197,11 @@ export default function GraphView({ graph: incoming, focus }) {
 
   const counts = useMemo(() => {
     const result = {};
-    for (const node of graph.nodes) result[node.type] = (result[node.type] ?? 0) + 1;
+    // 구상 중 프로젝트는 프로젝트 수에 넣지 않고 따로 셈 (노드는 그래프에 "구상 중"으로 남음)
+    for (const node of graph.nodes) {
+      const key = node.idea ? "idea" : node.type;
+      result[key] = (result[key] ?? 0) + 1;
+    }
     return result;
   }, [graph]);
 
@@ -344,14 +348,29 @@ export default function GraphView({ graph: incoming, focus }) {
       ctx.save();
       ctx.globalAlpha = (active ? 1 : 0.12) * appear;
 
-      // 빛 번짐
-      ctx.shadowColor = color;
-      ctx.shadowBlur = active ? (node.type === "project" ? 22 : 12) : 0;
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, r * (0.4 + 0.6 * appear), 0, 2 * Math.PI);
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      if (node.idea) {
+        // 구상 중 프로젝트: 빛 번짐 없이 점선 테두리 원 + 옅은 안쪽 (아직 만들지 않았다는 표시)
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, r * (0.4 + 0.6 * appear), 0, 2 * Math.PI);
+        ctx.fillStyle = GRAPH_BG; // 연결선이 원 안으로 비치지 않게 배경색부터
+        ctx.fill();
+        ctx.fillStyle = `${color}26`;
+        ctx.fill();
+        ctx.setLineDash([2.2, 1.8]);
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else {
+        // 빛 번짐
+        ctx.shadowColor = color;
+        ctx.shadowBlur = active ? (node.type === "project" ? 22 : 12) : 0;
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, r * (0.4 + 0.6 * appear), 0, 2 * Math.PI);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
 
       if (selected || hovered) {
         ctx.beginPath();
@@ -388,8 +407,17 @@ export default function GraphView({ graph: incoming, focus }) {
         ctx.lineJoin = "round";
         ctx.strokeStyle = GRAPH_BG;
         ctx.strokeText(text, node.x, labelY);
-        ctx.fillStyle = "#e5e7eb";
+        ctx.fillStyle = node.idea ? "#9aa2b1" : "#e5e7eb";
         ctx.fillText(text, node.x, labelY);
+        if (node.idea) {
+          // 이름 아래 작게 "구상 중"
+          const tagSize = fontSize * 0.78;
+          const tagY = labelY + fontSize * 1.25;
+          ctx.font = `400 ${tagSize}px ${LABEL_FONT}`;
+          ctx.strokeText("구상 중", node.x, tagY);
+          ctx.fillStyle = "#9aa2b1";
+          ctx.fillText("구상 중", node.x, tagY);
+        }
       }
 
       ctx.restore();

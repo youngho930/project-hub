@@ -1,4 +1,4 @@
-import { Bookmark, CalendarDays, FileText, Flag, Hourglass, Send, Sun, Users } from "lucide-react";
+import { Bookmark, CalendarDays, Clock, Hourglass, RefreshCw, Sun } from "lucide-react";
 import { CALENDAR_STATUS } from "@/lib/calendar";
 import { PIPELINE_STATUS, formatKst } from "@/lib/pipeline";
 
@@ -14,15 +14,6 @@ const BOARD_CAPTION = {
   [CALENDAR_STATUS.unset]: "캘린더 연결 전",
   [CALENDAR_STATUS.error]: "캘린더 불러오기 실패",
 };
-
-// Job Jarvis 지원 단계별 개수 (Upstash hub:pipeline)
-const PIPELINE = [
-  { key: "saved", label: "저장", Icon: Bookmark, color: "bg-blue" },
-  { key: "applied", label: "지원", Icon: Send, color: "bg-orange" },
-  { key: "screening", label: "서류", Icon: FileText, color: "bg-orange" },
-  { key: "interview", label: "면접", Icon: Users, color: "bg-red" },
-  { key: "result", label: "결과", Icon: Flag, color: "bg-green" },
-];
 
 // 막대 길이: 항목 중 가장 큰 값 기준 비율
 function BarList({ items }) {
@@ -75,39 +66,61 @@ export function BoardCard({ calendar }) {
   );
 }
 
-// pipeline: getPipeline() 결과 (단계별 개수와 갱신 시각만)
+// 한 줄씩 "이름 … 값" (막대 없이). Board 카드와 같은 줄 간격
+function FactList({ items }) {
+  return (
+    <ul className="space-y-2.5">
+      {items.map(({ label, Icon, value }) => (
+        <li key={label} className="flex items-center gap-3 text-body">
+          <Icon size={14} className="shrink-0 text-muted" />
+          <span className="text-muted">{label}</span>
+          <span className="ml-auto font-semibold tabular-nums">{value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// pipeline: getPipeline() 결과 (저장한 공고 수와 갱신 시각만. 지원·서류·면접·결과 개수는 서버에서 이미 버림)
 export function PipelineCard({ pipeline }) {
-  const items = PIPELINE.map((item) => ({ ...item, count: pipeline.counts[item.key] }));
   const connected =
     pipeline.status === PIPELINE_STATUS.connected ||
     pipeline.status === PIPELINE_STATUS.stale;
+  const lastRun = connected ? formatKst(pipeline.updatedAt) : null;
   return (
     <OperationCard
-      label="Pipeline"
-      // 단계끼리 겹치는 숫자라 합계 대신 지원 건수
+      label="Job collector"
       total={
-        <span className="flex items-baseline gap-1">
-          <span className="text-title font-bold tabular-nums">{pipeline.counts.applied}</span>
-          <span className="text-caption text-muted">지원</span>
-        </span>
+        connected && (
+          <span className="flex items-baseline gap-1">
+            <span className="text-title font-bold tabular-nums">{pipeline.saved}</span>
+            <span className="text-caption text-muted">건 저장</span>
+          </span>
+        )
       }
       error={pipeline.status === PIPELINE_STATUS.error}
       caption={
         connected ? (
           <>
-            Job Jarvis · 매일 9시 갱신 · 마지막 {formatKst(pipeline.updatedAt) ?? "-"}
+            Job Jarvis · 저장한 공고 {pipeline.saved}건 · 매일 9시 자동 수집
             {pipeline.status === PIPELINE_STATUS.stale && (
               <span className="ml-1.5 font-semibold text-orange">갱신 지연</span>
             )}
           </>
         ) : pipeline.status === PIPELINE_STATUS.unset ? (
-          "지원 현황 연결 전"
+          "공고 수집 연결 전"
         ) : (
-          "지원 현황 불러오기 실패"
+          "공고 수집 현황 불러오기 실패"
         )
       }
     >
-      <BarList items={items} />
+      <FactList
+        items={[
+          { label: "저장한 공고", Icon: Bookmark, value: connected ? `${pipeline.saved}건` : "-" },
+          { label: "자동 수집", Icon: Clock, value: "매일 9시" },
+          { label: "마지막 수집", Icon: RefreshCw, value: lastRun ?? "-" },
+        ]}
+      />
     </OperationCard>
   );
 }

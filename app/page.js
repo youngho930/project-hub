@@ -11,12 +11,13 @@ import { TYPE_META } from "@/components/graph/types";
 import { BoardCard, PipelineCard } from "@/components/OperationCards";
 import StatusBadge from "@/components/StatusBadge";
 import { getCalendarSummary } from "@/lib/calendar";
-import { getGitHubStatus } from "@/lib/github";
+import RelativeTime from "@/components/RelativeTime";
+import { getLatestCommitAt } from "@/lib/github";
 import { getGraph } from "@/lib/graph";
 import { getPipeline } from "@/lib/pipeline";
 import { getCardPreview } from "@/lib/previews";
 import { getProfile } from "@/lib/profile";
-import { NEEDS_CHECK, getAllProjects } from "@/lib/projects";
+import { NEEDS_CHECK, PROJECT_STATUS, getAllProjects } from "@/lib/projects";
 
 // 프로젝트 종류(그룹)별 색: 썸네일이 없을 때 배경, 마우스를 올렸을 때 빛 번짐
 const GROUP_COLOR = {
@@ -66,10 +67,10 @@ function mainEffect(project) {
   };
 }
 
-// 넓은 화면에서 두 칸을 차지하는 대표작. 값은 두 칸이 되기 시작하는 화면 크기.
-//  - 3열(xl): 재고 대시보드·자비스 둘 다 두 칸 → 2+1, 2+1, 1+1+1 로 세 줄이 꽉 참
-//  - 2열(sm~lg): 재고 대시보드만 두 칸 → 2, 1+1, 1+1, 1+1 로 빈칸 없음
-const FEATURED = { "inventory-dashboard": "sm", jarvis: "xl" };
+// 넓은 화면에서 두 칸을 차지하는 대표작. 값은 두 칸이 되기 시작하는 화면 크기. (쇼케이스 6개 기준)
+//  - 3열(xl): 재고 대시보드·자비스·엑셀 취합 세 개가 두 칸 → 2+1, 1+2, 2+1 로 세 줄이 꽉 참
+//  - 2열(sm~lg): 재고 대시보드·자비스가 두 칸 → 2, 1+1, 2, 1+1 로 빈칸 없음
+const FEATURED = { "inventory-dashboard": "sm", jarvis: "sm", "excel-merger": "xl" };
 
 // 두 칸일 때는 썸네일(왼쪽)과 설명(오른쪽)을 가로로 놓아 썸네일을 크게
 const WIDE = {
@@ -90,18 +91,27 @@ const WIDE = {
 // 카드 썸네일 기준점 (빈 띠 없이 채우면서 핵심 부분이 남게). 없으면 가운데
 const THUMB_POSITION = { "inventory-dashboard": "object-left-top" };
 
-const STATUS_RANK = { "개발 중": 1, "구상 중": 2 };
+// 썸네일 밝기: 다크 테마에서 서로 비슷한 밝기로 보이게 (이미지 파일은 그대로, CSS 필터만).
+// 평균 밝기(0~255) 재고 대시보드 207·QC AI 챗봇 248 은 많이 낮추고, 14 인 자비스는 조금 밝힘. 마우스를 올리면 원래 밝기
+const THUMB_TONE = {
+  "inventory-dashboard": "brightness-[0.55]",
+  "qc-ai-assistant": "brightness-[0.5]",
+  jarvis: "brightness-[1.12]",
+};
+const DEFAULT_TONE = "brightness-[0.72]";
 
-// 완성된 프로젝트 먼저, 개발 중·구상 중은 뒤로 (같은 단계 안에서는 order 순).
-// 3열에서 대표작 두 개가 1·2번째 줄의 첫 칸(0번, 2번 자리)에 오도록 배치
+const STATUS_RANK = { "개발 중": 1 };
+
+// 완성된 프로젝트 먼저, 개발 중은 뒤로 (같은 단계 안에서는 order 순).
+// 대표작이 두 칸 자리에 오도록 배치: 대표작 0 · 보통 0 · 보통 1 · 대표작 1 · 대표작 2 · 보통 2 …
+// (3열: 2+1, 1+2, 2+1 / 2열: 엑셀 취합은 한 칸이라 2, 1+1, 2, 1+1)
 function arrange(projects) {
   const ranked = [...projects].sort(
     (a, b) => (STATUS_RANK[a.status] ?? 0) - (STATUS_RANK[b.status] ?? 0)
   );
   const featured = ranked.filter((p) => FEATURED[p.id]);
   const rest = ranked.filter((p) => !FEATURED[p.id]);
-  const [first, second] = featured;
-  return [first, rest[0], second, rest[1], ...rest.slice(2)].filter(Boolean);
+  return [featured[0], rest[0], rest[1], featured[1], featured[2], rest[2], ...rest.slice(3)].filter(Boolean);
 }
 
 function ProjectCard({ project }) {
@@ -137,7 +147,7 @@ function ProjectCard({ project }) {
             }
             // 카드 썸네일은 빈 띠 없이 채움. 기준점은 프로젝트마다 (자비스는 가운데 원형 화면,
             // 재고 대시보드는 왼쪽 메뉴가 잘리지 않게 왼쪽 위). 프로젝트 화면 PREVIEW 는 잘리지 않는 방식 유지
-            className={`object-cover ${THUMB_POSITION[project.id] ?? "object-center"} brightness-[0.72] saturate-[0.9] transition-[filter,transform] duration-300 group-hover:scale-[1.02] group-hover:brightness-100 group-hover:saturate-100 motion-reduce:transition-none`}
+            className={`object-cover ${THUMB_POSITION[project.id] ?? "object-center"} ${THUMB_TONE[project.id] ?? DEFAULT_TONE} saturate-[0.9] transition-[filter,transform] duration-300 group-hover:scale-[1.02] group-hover:brightness-100 group-hover:saturate-100 motion-reduce:transition-none`}
           />
         ) : Illustration ? (
           <span className="absolute inset-0 p-3 opacity-90 transition-opacity duration-300 group-hover:opacity-100">
@@ -153,6 +163,11 @@ function ProjectCard({ project }) {
             </span>
           </span>
         )}
+        {/* 모든 썸네일 공통: 아래쪽이 카드 배경색으로 살짝 어두워짐 (가로 배치 카드도) */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card/70 to-transparent"
+        />
         {/* 썸네일 아래(가로 배치면 오른쪽)가 카드 배경으로 스며들게 */}
         <span
           aria-hidden="true"
@@ -204,22 +219,45 @@ function ProjectCard({ project }) {
 
 export default async function Home() {
   const profile = getProfile();
-  const projects = getAllProjects();
-  const nameOf = Object.fromEntries(projects.map((p) => [p.id, p.name]));
+  const allProjects = getAllProjects();
+  const nameOf = Object.fromEntries(allProjects.map((p) => [p.id, p.name]));
+  // 쇼케이스·개수는 만든 것만. 구상 중인 프로젝트는 쇼케이스 아래 "다음에 만들 것" 한 줄로
+  const projects = allProjects.filter((p) => p.status !== PROJECT_STATUS.idea);
+  const upcoming = allProjects.filter((p) => p.status === PROJECT_STATUS.idea);
 
   const graph = getGraph();
-  const countOf = (type) => graph.nodes.filter((node) => node.type === type).length;
+  // 프로젝트 수에는 구상 중 노드를 넣지 않음 (그래프에는 "구상 중"으로 구분해 남아 있음)
+  const countOf = (type) =>
+    graph.nodes.filter((node) => node.type === type && !node.idea).length;
 
-  // 개수와 상태만 받음 (일정·공고 내용은 서버 밖으로 나오지 않음)
-  const [githubStatus, calendar, pipeline] = await Promise.all([
-    getGitHubStatus(),
+  // 개수·시각과 상태만 받음 (일정·공고 내용, 지원 단계별 개수는 서버 밖으로 나오지 않음)
+  const [github, calendar, pipeline] = await Promise.all([
+    getLatestCommitAt(),
     getCalendarSummary(),
     getPipeline(),
   ]);
+  // LIVE 패널: 연결돼 있고 값을 받았으면 짧은 실제 정보, 아니면 지금처럼 상태 글자
+  const isUp = (status) => status === "연결됨" || status === "지연";
   const sources = [
-    { name: "GitHub", status: githubStatus },
-    { name: "Calendar", status: calendar.status },
-    { name: "Job Jarvis", status: pipeline.status },
+    {
+      name: "GitHub",
+      status: github.status,
+      detail: isUp(github.status) && github.at && (
+        <>
+          최근 커밋 <RelativeTime iso={github.at} />
+        </>
+      ),
+    },
+    {
+      name: "Calendar",
+      status: calendar.status,
+      detail: isUp(calendar.status) && `이번 주 일정 ${calendar.counts.week}개`,
+    },
+    {
+      name: "Job Jarvis",
+      status: pipeline.status,
+      detail: isUp(pipeline.status) && pipeline.saved != null && `저장 공고 ${pipeline.saved}건`,
+    },
   ];
 
   return (
@@ -229,7 +267,8 @@ export default async function Home() {
         id="hero"
         data-hero
         aria-labelledby="intro-title"
-        className="relative overflow-hidden rounded-3xl border border-line px-6 py-12 sm:px-10 sm:py-16 lg:px-14"
+        // 아래 여백은 위보다 짧게 (휴대폰에서 첫 화면 안에 대표 숫자 카드 윗부분이 보이게, 아래 mb-6 도 같은 이유)
+        className="relative overflow-hidden rounded-3xl border border-line px-6 pt-10 pb-7 max-sm:mb-6 sm:px-10 sm:pt-16 sm:pb-12 lg:px-14"
         style={{
           background:
             "radial-gradient(60% 80% at 100% 0%, rgba(139,92,246,0.28) 0%, transparent 60%), radial-gradient(50% 70% at 0% 100%, rgba(245,158,11,0.16) 0%, transparent 60%), linear-gradient(180deg, #111624 0%, #0c1019 100%)",
@@ -244,9 +283,10 @@ export default async function Home() {
         />
         <HeroStarfield targetId="hero" />
 
-        <div className="relative flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
+        {/* md 이상(왼쪽 메뉴가 접히는 폭 포함)이면 LIVE 패널을 오른쪽에 둠 → 카드 오른쪽 절반이 비지 않게 */}
+        <div className="relative flex flex-col gap-7 sm:gap-10 md:flex-row md:items-end md:justify-between md:gap-8">
           {/* data-star-dim: 이 영역 뒤의 별은 더 적고 어둡게, 별똥별도 피함 (public/hero-stars.js) */}
-          <div className="max-w-3xl" data-star-dim>
+          <div className="max-w-3xl min-w-0" data-star-dim>
             {/* hero-rise: 첫 방문 도착 연출이 걷힐 때만 차례로 떠오름 (globals.css, app/layout.js) */}
             <p className="hero-rise label flex items-center gap-2 text-accent">
               <span className="size-1.5 rounded-full bg-accent shadow-[0_0_10px_#f59e0b]" />
@@ -289,10 +329,10 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* 연결 상태 (글자와 점만) */}
+          {/* 연결 상태: 데이터를 받았으면 짧은 실제 정보(최근 커밋 시각, 이번 주 일정 수, 저장 공고 수), 아니면 상태 글자 */}
           <div
             data-star-avoid
-            className="hero-rise shrink-0 rounded-2xl border border-line bg-bg/50 p-4 backdrop-blur sm:w-60"
+            className="hero-rise shrink-0 rounded-2xl border border-line bg-bg/50 p-4 backdrop-blur sm:w-64"
             style={{ "--i": 4 }}
           >
             <p className="label flex items-center gap-2 text-green">
@@ -303,13 +343,13 @@ export default async function Home() {
               Live
             </p>
             <ul className="mt-3 space-y-2 text-body">
-              {sources.map(({ name, status }) => (
+              {sources.map(({ name, status, detail }) => (
                 <li key={name} className="flex items-center gap-2.5">
                   <span
                     className={`size-1.5 shrink-0 rounded-full ${DOT_COLOR[status] ?? "bg-muted/50"}`}
                   />
                   <span>{name}</span>
-                  <span className="ml-auto text-caption text-muted">{status}</span>
+                  <span className="ml-auto text-caption whitespace-nowrap text-muted">{detail || status}</span>
                 </li>
               ))}
             </ul>
@@ -368,6 +408,27 @@ export default async function Home() {
             <ProjectCard key={project.id} project={project} />
           ))}
         </div>
+        {/* 다음에 만들 것: 구상 중인 프로젝트를 작게 한 줄씩 (쇼케이스 카드·개수에는 넣지 않음) */}
+        {upcoming.length > 0 && (
+          <div className="mt-5 flex flex-col gap-2 rounded-2xl border border-dashed border-line px-5 py-3.5 sm:flex-row sm:items-center sm:gap-4">
+            <p className="label shrink-0 text-accent/90">다음에 만들 것</p>
+            <ul className="flex min-w-0 flex-1 flex-col gap-1.5">
+              {upcoming.map((project) => (
+                <li key={project.id}>
+                  <Link
+                    href={`/projects/${project.id}`}
+                    className="group flex flex-wrap items-center gap-x-2.5 gap-y-1 text-body"
+                  >
+                    <span className="font-semibold transition-colors group-hover:text-accent">{project.name}</span>
+                    <StatusBadge status={project.status} />
+                    <span className="min-w-0 text-caption text-muted max-sm:basis-full">{project.summary}</span>
+                    <ArrowRight size={13} className="ml-auto shrink-0 text-muted transition-colors group-hover:text-accent max-sm:hidden" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       {/* ④ 일하는 방식 */}
