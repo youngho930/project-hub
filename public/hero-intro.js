@@ -226,7 +226,7 @@
     }
 
     var start = performance.now(), last = start, frame = 0, done = false;
-    var stats = { frames: 0, intervals: [], at: [], shardsOnScreen: [], streaks: B.streaks, shards: B.shards, reduced: false };
+    var stats = { frames: 0, intervals: [], at: [], shardsOnScreen: [], streaks: B.streaks, shards: B.shards, reduced: false, maxGap: 0, stalls: 0, stallTotal: 0 };
     window.__hubIntroStats = stats;
 
     function draw(t, dt) {
@@ -439,6 +439,17 @@
         document.body.appendChild(canvas);
       }
       if (opts.keepClasses) opts.keepClasses();
+      // 한 번에 0.2초 넘게 멈췄으면(페이지 준비 작업, 화면이 잠깐 가려짐 등) 그동안은 시간이 멈춘 것으로 봄:
+      // 멈춘 만큼 장면을 건너뛰어 "잠깐 보였다가 끝나는" 일이 없게 (보정은 합쳐서 1.2초까지, 느린 기기가 끝없이 늘어지지 않게)
+      var gap = now - last;
+      if (stats.frames > 0 && gap > stats.maxGap) stats.maxGap = Math.round(gap);
+      if (stats.frames > 0 && gap > 200 && stats.stallTotal < 1200) {
+        var hold = Math.min(gap - 1000 / 30, 1200 - stats.stallTotal);
+        start += hold;
+        stats.stallTotal += hold;
+        stats.stalls++;
+        if (opts.isIntro) logEvent(Math.round(gap) + "ms 멈춤 → 장면 건너뛰지 않게 보정");
+      }
       var t = (now - start) / 1000;
       var dt = Math.min(0.05, (now - last) / 1000);
       if (stats.frames > 0) {
@@ -595,7 +606,9 @@
       fadeIn: true,
       onSkip: reveal,
       onEnd: function () {
-        logReason("정상 완료");
+        // 건너뛰기·오류로 끝났으면 이미 기록된 이유가 남음. 끝까지 돌았으면 실제로 보인 프레임 수도 함께
+        var s = window.__hubIntroStats;
+        logReason("정상 완료", s && "프레임 " + s.frames + "장 · 가장 긴 간격 " + s.maxGap + "ms" + (s.stalls ? " · 멈춤 보정 " + s.stalls + "회" : ""));
         reveal();
         window.__hubIntroRunning = false;
         if (window.__hubIntroEnd) window.__hubIntroEnd();
