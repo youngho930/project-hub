@@ -17,6 +17,7 @@ import { getGraph } from "@/lib/graph";
 import { getPipeline } from "@/lib/pipeline";
 import { getCardPreview } from "@/lib/previews";
 import { getProfile } from "@/lib/profile";
+import { ideaSuffix } from "@/lib/project-count";
 import { NEEDS_CHECK, PROJECT_STATUS, getAllProjects } from "@/lib/projects";
 
 // 프로젝트 종류(그룹)별 색: 썸네일이 없을 때 배경, 마우스를 올렸을 때 빛 번짐
@@ -89,7 +90,8 @@ const WIDE = {
 };
 
 // 카드 썸네일 기준점 (빈 띠 없이 채우면서 핵심 부분이 남게). 없으면 가운데
-const THUMB_POSITION = { "inventory-dashboard": "object-left-top" };
+// 엑셀 취합·검증기: 원본 화면의 제목·소개 문구가 왼쪽 위에 있어, 두 칸 카드에서 좌우가 잘려도 글자가 중간부터 잘리지 않게 왼쪽 위 기준
+const THUMB_POSITION = { "inventory-dashboard": "object-left-top", "excel-merger": "object-left-top" };
 
 // 썸네일 밝기: 다크 테마에서 서로 비슷한 밝기로 보이게 (이미지 파일은 그대로, CSS 필터만).
 // 평균 밝기(0~255) 재고 대시보드 207·QC AI 챗봇 248 은 많이 낮추고, 14 인 자비스는 조금 밝힘. 마우스를 올리면 원래 밝기
@@ -101,6 +103,7 @@ const THUMB_TONE = {
 const DEFAULT_TONE = "brightness-[0.72]";
 
 const STATUS_RANK = { "개발 중": 1 };
+const BREAKPOINT_RANK = { sm: 0, xl: 1 };
 
 // 완성된 프로젝트 먼저, 개발 중은 뒤로 (같은 단계 안에서는 order 순).
 // 대표작이 두 칸 자리에 오도록 배치: 대표작 0 · 보통 0 · 보통 1 · 대표작 1 · 대표작 2 · 보통 2 …
@@ -109,7 +112,11 @@ function arrange(projects) {
   const ranked = [...projects].sort(
     (a, b) => (STATUS_RANK[a.status] ?? 0) - (STATUS_RANK[b.status] ?? 0)
   );
-  const featured = ranked.filter((p) => FEATURED[p.id]);
+  // 대표작은 두 칸이 되는 폭이 좁은 것(sm)부터: 2열에서는 sm 대표작 두 개만 두 칸이라
+  // 0번·3번 자리에 sm 대표작이 와야 빈칸이 없음 (order 순으로 고르면 엑셀 취합이 3번 자리에 와서 혼자 남았음)
+  const featured = ranked
+    .filter((p) => FEATURED[p.id])
+    .sort((a, b) => BREAKPOINT_RANK[FEATURED[a.id]] - BREAKPOINT_RANK[FEATURED[b.id]]);
   const rest = ranked.filter((p) => !FEATURED[p.id]);
   return [featured[0], rest[0], rest[1], featured[1], featured[2], rest[2], ...rest.slice(3)].filter(Boolean);
 }
@@ -238,11 +245,13 @@ export default async function Home() {
   ]);
   // LIVE 패널: 연결돼 있고 값을 받았으면 짧은 실제 정보, 아니면 지금처럼 상태 글자
   const isUp = (status) => status === "연결됨" || status === "지연";
+  // 최근 커밋이 7일보다 오래됐거나(github.recent) 개수가 0이면 숫자 대신 "연결됨"
+  // (오래된 날짜·0 이 오히려 멈춘 것처럼 보이지 않게)
   const sources = [
     {
       name: "GitHub",
       status: github.status,
-      detail: isUp(github.status) && github.at && (
+      detail: isUp(github.status) && github.recent && (
         <>
           최근 커밋 <RelativeTime iso={github.at} />
         </>
@@ -251,12 +260,12 @@ export default async function Home() {
     {
       name: "Calendar",
       status: calendar.status,
-      detail: isUp(calendar.status) && `이번 주 일정 ${calendar.counts.week}개`,
+      detail: isUp(calendar.status) && calendar.counts.week > 0 && `이번 주 일정 ${calendar.counts.week}개`,
     },
     {
       name: "Job Jarvis",
       status: pipeline.status,
-      detail: isUp(pipeline.status) && pipeline.saved != null && `저장 공고 ${pipeline.saved}건`,
+      detail: isUp(pipeline.status) && pipeline.saved > 0 && `저장 공고 ${pipeline.saved}건`,
     },
   ];
 
@@ -401,7 +410,11 @@ export default async function Home() {
           id="projects"
           label="Projects"
           title="만든 것들"
-          aside={<p className="text-body text-muted">{projects.length}개 프로젝트</p>}
+          aside={
+            <p className="text-body text-muted">
+              {projects.length}개 프로젝트{ideaSuffix(upcoming.length)}
+            </p>
+          }
         />
         <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {arrange(projects).map((project) => (
@@ -482,7 +495,12 @@ export default async function Home() {
                     <span className="size-1.5 rounded-full" style={{ background: TYPE_META[type].color }} />
                     {label}
                   </dt>
-                  <dd className="mt-1 text-heading font-bold tabular-nums">{countOf(type)}</dd>
+                  <dd className="mt-1 text-heading font-bold tabular-nums">
+                    {countOf(type)}
+                    {type === "project" && upcoming.length > 0 && (
+                      <span className="text-caption font-normal text-muted">{ideaSuffix(upcoming.length)}</span>
+                    )}
+                  </dd>
                 </div>
               ))}
             </dl>

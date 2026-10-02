@@ -7,6 +7,7 @@ import { ILLUSTRATIONS } from "@/components/illustrations";
 import { ArrowUpRight, Lock, X } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import { Value } from "@/components/Value";
+import { ideaSuffix } from "@/lib/project-count";
 import { TYPE_META, TYPE_ORDER } from "./types";
 
 const isEmpty = (value) =>
@@ -69,11 +70,13 @@ function Empty({ counts }) {
           <li key={type} className="flex items-center gap-2.5 text-body">
             <Dot type={type} />
             <span>{TYPE_META[type].label}</span>
-            {/* 프로젝트 수는 만든 것만, 구상 중은 옆에 따로 */}
-            {type === "project" && counts.idea > 0 && (
-              <span className="text-caption text-muted">+ 구상 중 {counts.idea}</span>
-            )}
-            <span className="ml-auto font-bold">{counts[type] ?? 0}</span>
+            {/* 프로젝트 수는 만든 것만, 구상 중은 " · 구상 n" 으로 따로 (사이트 전체 같은 표기) */}
+            <span className="ml-auto font-bold">
+              {counts[type] ?? 0}
+              {type === "project" && (
+                <span className="text-caption font-normal text-muted">{ideaSuffix(counts.idea)}</span>
+              )}
+            </span>
           </li>
         ))}
       </ul>
@@ -291,7 +294,7 @@ export function TypeCounts({ counts, className = "" }) {
           <Dot type={type} />
           {TYPE_META[type].label}
           <b className="text-text">{counts[type] ?? 0}</b>
-          {type === "project" && counts.idea > 0 && <span>(+ 구상 중 {counts.idea})</span>}
+          {type === "project" && ideaSuffix(counts.idea)}
         </span>
       ))}
       <span className="ml-auto">노드를 누르면 자세히</span>

@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useSitePathname } from "@/lib/use-site-pathname";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import StatusBadge from "./StatusBadge";
+import { ideaSuffix, isIdea } from "@/lib/project-count";
 
 // 연결 상태별 점 색
 const DOT_COLOR = {
@@ -159,9 +160,12 @@ export default function Sidebar({
                 />
                 <FolderIcon size={16} />
                 <span className="truncate">{group.name}</span>
-                {/* 개수는 만든 것만 (구상 중은 목록에 배지로만 보임, 첫 화면 "n개 프로젝트" 와 같은 기준) */}
-                <span className="ml-auto text-caption font-semibold">
-                  {group.projects.filter((p) => p.status !== "구상 중").length}
+                {/* 만든 것 수 + " · 구상 n" (첫 화면·지식 그래프와 같은 표기, 목록 줄 수와도 맞음) */}
+                <span className="ml-auto shrink-0 text-caption font-semibold">
+                  {group.projects.filter((p) => !isIdea(p)).length}
+                  <span className="font-normal">
+                    {ideaSuffix(group.projects.filter(isIdea).length)}
+                  </span>
                 </span>
               </button>
 

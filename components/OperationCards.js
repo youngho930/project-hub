@@ -1,4 +1,4 @@
-import { Bookmark, CalendarDays, Clock, Hourglass, RefreshCw, Sun } from "lucide-react";
+import { CalendarDays, Clock, Database, Hourglass, RefreshCw, Sun } from "lucide-react";
 import { CALENDAR_STATUS } from "@/lib/calendar";
 import { PIPELINE_STATUS, formatKst } from "@/lib/pipeline";
 
@@ -56,7 +56,7 @@ export function BoardCard({ calendar }) {
   const sum = items.reduce((total, item) => total + item.count, 0);
   return (
     <OperationCard
-      label="Board"
+      label="Calendar"
       total={<span className="text-title font-bold tabular-nums">{sum}</span>}
       caption={BOARD_CAPTION[calendar.status]}
       error={calendar.status === CALENDAR_STATUS.error}
@@ -66,7 +66,7 @@ export function BoardCard({ calendar }) {
   );
 }
 
-// 한 줄씩 "이름 … 값" (막대 없이). Board 카드와 같은 줄 간격
+// 한 줄씩 "이름 … 값" (막대 없이). Calendar 카드와 같은 줄 간격
 function FactList({ items }) {
   return (
     <ul className="space-y-2.5">
@@ -81,12 +81,17 @@ function FactList({ items }) {
   );
 }
 
-// pipeline: getPipeline() 결과 (저장한 공고 수와 갱신 시각만. 지원·서류·면접·결과 개수는 서버에서 이미 버림)
+// pipeline: getPipeline() 결과 (저장한 공고 수와 갱신 시각만. 지원·서류·면접·결과 개수는 서버에서 이미 버림).
+// Calendar 카드와 같은 구조: 오른쪽 위 요약 숫자 하나(저장 공고) · 본문 줄(수집 방식) · 아래 출처 한 줄. 같은 정보는 한 번만
 export function PipelineCard({ pipeline }) {
   const connected =
     pipeline.status === PIPELINE_STATUS.connected ||
     pipeline.status === PIPELINE_STATUS.stale;
-  const lastRun = connected ? formatKst(pipeline.updatedAt) : null;
+  // 2일 넘게 갱신이 없으면(지연) 오래된 날짜 대신 상황 설명: Job Jarvis 는 PC 작업 스케줄러로 돌아 PC 를 켤 때 수집함
+  const lastRun =
+    pipeline.status === PIPELINE_STATUS.stale
+      ? { label: "다음 수집", Icon: RefreshCw, value: "PC 실행 시 자동 수집" }
+      : { label: "마지막 수집", Icon: RefreshCw, value: (connected && formatKst(pipeline.updatedAt)) || "-" };
   return (
     <OperationCard
       label="Job collector"
@@ -100,25 +105,18 @@ export function PipelineCard({ pipeline }) {
       }
       error={pipeline.status === PIPELINE_STATUS.error}
       caption={
-        connected ? (
-          <>
-            Job Jarvis · 저장한 공고 {pipeline.saved}건 · 매일 9시 자동 수집
-            {pipeline.status === PIPELINE_STATUS.stale && (
-              <span className="ml-1.5 font-semibold text-orange">갱신 지연</span>
-            )}
-          </>
-        ) : pipeline.status === PIPELINE_STATUS.unset ? (
-          "공고 수집 연결 전"
-        ) : (
-          "공고 수집 현황 불러오기 실패"
-        )
+        connected
+          ? "Job Jarvis · 10분마다 갱신"
+          : pipeline.status === PIPELINE_STATUS.unset
+            ? "공고 수집 연결 전"
+            : "공고 수집 현황 불러오기 실패"
       }
     >
       <FactList
         items={[
-          { label: "저장한 공고", Icon: Bookmark, value: connected ? `${pipeline.saved}건` : "-" },
-          { label: "자동 수집", Icon: Clock, value: "매일 9시" },
-          { label: "마지막 수집", Icon: RefreshCw, value: lastRun ?? "-" },
+          { label: "수집 출처", Icon: Database, value: "고용24 API" },
+          { label: "수집 주기", Icon: Clock, value: "매일 9시" },
+          lastRun,
         ]}
       />
     </OperationCard>
