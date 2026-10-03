@@ -15,6 +15,7 @@ import RelativeTime from "@/components/RelativeTime";
 import { getLatestCommitAt } from "@/lib/github";
 import { getGraph } from "@/lib/graph";
 import { getPipeline } from "@/lib/pipeline";
+import { getIntroMode } from "@/lib/intro-setting";
 import { getCardPreview } from "@/lib/previews";
 import { getProfile } from "@/lib/profile";
 import { ideaSuffix } from "@/lib/project-count";
@@ -238,10 +239,11 @@ export default async function Home() {
     graph.nodes.filter((node) => node.type === type && !node.idea).length;
 
   // 개수·시각과 상태만 받음 (일정·공고 내용, 지원 단계별 개수는 서버 밖으로 나오지 않음)
-  const [github, calendar, pipeline] = await Promise.all([
+  const [github, calendar, pipeline, introMode] = await Promise.all([
     getLatestCommitAt(),
     getCalendarSummary(),
     getPipeline(),
+    getIntroMode(), // 인트로 설정이 "없음"이면 아래 "인트로 다시 보기" 링크를 숨긴다 (layout 과 같은 값, 같은 렌더)
   ]);
   // LIVE 패널: 연결돼 있고 값을 받았으면 짧은 실제 정보, 아니면 지금처럼 상태 글자
   const isUp = (status) => status === "연결됨";
@@ -575,14 +577,17 @@ export default async function Home() {
           </a>
         </div>
         {/* 첫 방문 도착 연출 다시 보기: ?intro 로 새로 불러옴 (app/layout.js). 움직임 줄이기면 연출이 없으므로 숨김.
+            인트로 설정이 "없음"이면 다시 볼 연출이 없으므로 링크도 그리지 않음.
             연출은 문서를 새로 불러올 때만 재생되므로 <Link>(화면 안 이동) 대신 <a> 로 전체 새로 고침 */}
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-        <a
-          href="/?intro"
-          className="mt-5 inline-flex min-h-11 items-center px-2 text-caption text-muted underline-offset-4 transition-colors hover:text-text hover:underline motion-reduce:hidden"
-        >
-          인트로 다시 보기
-        </a>
+        {introMode !== "none" && (
+          // eslint-disable-next-line @next/next/no-html-link-for-pages
+          <a
+            href="/?intro"
+            className="mt-5 inline-flex min-h-11 items-center px-2 text-caption text-muted underline-offset-4 transition-colors hover:text-text hover:underline motion-reduce:hidden"
+          >
+            인트로 다시 보기
+          </a>
+        )}
       </section>
     </div>
   );
