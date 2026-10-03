@@ -19,6 +19,8 @@ const store = new Map(); // key → { v, exp }
 let clock = Date.UTC(2026, 9, 4, 3, 0, 0);
 const sent = []; // { token, cmd } — 실제로 나간 요청
 let readMode = "ok"; // ok | http500 | throw | badjson
+let writeFail = null; // null 이면 정상. (cmd) => "noperm" | "wrongpass" | "http500" | "throw" | null — 명령별로 실패를 흉내 냄
+const NOPERM_TEXT = "NOPERM this user has no permissions to run the 'set' command";
 const live = (k) => { const e = store.get(k); if (!e) return null; if (e.exp && e.exp <= clock) { store.delete(k); return null; } return e; };
 function redis([c, k, ...a]) {
   if (c === "GET") return live(k)?.v ?? null;
@@ -43,6 +45,11 @@ globalThis.fetch = async (url, opts = {}) => {
     const cmd = JSON.parse(opts.body);
     sent.push({ token, cmd });
     if (token !== WRITE_TOKEN) return { ok: false, status: 401, json: async () => ({ error: "unauthorized" }) };
+    const f = writeFail?.(cmd);
+    if (f === "throw") throw new Error("connect ECONNREFUSED " + URL_);
+    if (f === "noperm") return { ok: false, status: 400, json: async () => ({ error: NOPERM_TEXT }) };
+    if (f === "wrongpass") return { ok: false, status: 401, json: async () => ({ error: "WRONGPASS invalid or missing auth token " + WRITE_TOKEN }) };
+    if (f === "http500") return { ok: false, status: 500, json: async () => { throw new Error("not json"); } };
     return { ok: true, status: 200, json: async () => ({ result: redis(cmd) }) };
   }
   throw new Error("unexpected url");
@@ -55,7 +62,7 @@ process.env.HUB_ADMIN_PASSWORD = PASSWORD;
 
 const { handleIntroSave, MAX_FAILS, WINDOW_SEC } = await import("../lib/intro-save.js");
 const { getIntroMode, INTRO_KEY } = await import("../lib/intro-setting.js");
-const { assertAllowed, settingsCommand, SettingsKeyBlocked } = await import("../lib/settings-store.js");
+const { assertAllowed, settingsCommand, SettingsKeyBlocked, probeWrite, PROBE_KEY } = await import("../lib/settings-store.js");
 const { arrivalScript, normalizeIntroMode } = await import("../lib/arrival-script.js");
 
 const logs = [];
@@ -64,7 +71,7 @@ const save = (body, extra = {}) =>
   handleIntroSave({ origin: ORIGIN, allowedOrigins: [ORIGIN], ip: "203.0.113.7", body, now: clock, log, ...extra });
 
 beforeEach(() => {
-  store.clear(); sent.length = 0; logs.length = 0; readMode = "ok";
+  store.clear(); sent.length = 0; logs.length = 0; readMode = "ok"; writeFail = null;
   clock = Date.UTC(2026, 9, 4, 3, 0, 0);
   process.env.HUB_ADMIN_PASSWORD = PASSWORD;
   process.env.HUB_SETTINGS_WRITE_TOKEN = WRITE_TOKEN;
@@ -300,4 +307,93 @@ test("설정값은 정해진 두 값만 스크립트에 들어감 (다른 문자
   for (const v of ["warp", "data", "", null, undefined, "</script><script>alert(1)</script>"]) assert.equal(normalizeIntroMode(v), "warp");
   assert.ok(!arrivalScript("</script>").includes("</script>"));
   assert.match(arrivalScript("none"), /^try\{var M="none",/);
+});
+
+/* ===== 저장 실패: 원인별 안내와 로그 ===== */
+const SET_INTRO = (cmd) => cmd[0] === "SET" && cmd[1] === INTRO_KEY;
+const WRITES = (cmd) => cmd[0] === "SET" || cmd[0] === "INCR" || cmd[0] === "DEL" || cmd[0] === "EXPIRE";
+const noLeak = (r) => {
+  const all = JSON.stringify(r.body) + "\n" + logs.join("\n");
+  for (const secret of [PASSWORD, WRITE_TOKEN, READ_TOKEN, URL_, "ECONNREFUSED", "this user has no permissions", "invalid or missing auth token"]) {
+    assert.ok(!all.includes(secret), "화면·로그에 있음: " + secret);
+  }
+};
+
+test("읽기 전용 토큰(NOPERM) → 저장소 권한 문제로 안내, 로그에 NOPERM 과 __probe 점검 결과", async () => {
+  writeFail = (cmd) => (WRITES(cmd) ? "noperm" : null);
+  const r = await save({ intro: "none", password: PASSWORD });
+  assert.equal(r.status, 502);
+  assert.equal(r.body.error, "store_denied");
+  assert.match(r.body.message, /쓰기를 거부/);
+  assert.match(r.body.message, /읽기 전용/);
+  assert.equal(r.saved, undefined);
+  const line = logs.find((l) => l.includes("저장 실패"));
+  assert.match(line, /저장 실패: store_denied \| HTTP 400 \| 코드 NOPERM \| 쓰기 점검\(hub:settings:__probe\): SET 실패 store_denied NOPERM/);
+  assert.ok(sent.some((s) => s.cmd[0] === "SET" && s.cmd[1] === PROBE_KEY), "점검 쓰기를 실제로 보냄");
+  noLeak(r);
+});
+
+test("토큰이 틀림(WRONGPASS·401) → 토큰 값 확인 안내 (응답에 섞인 토큰도 화면·로그에 없음)", async () => {
+  writeFail = (cmd) => (cmd[0] === "SET" ? "wrongpass" : null);
+  const r = await save({ intro: "none", password: PASSWORD });
+  assert.equal(r.status, 502);
+  assert.equal(r.body.error, "store_auth");
+  assert.match(r.body.message, /토큰 값이 맞는지/);
+  assert.match(logs.join("\n"), /store_auth \| HTTP 401 \| 코드 WRONGPASS/);
+  noLeak(r);
+});
+
+test("연결 실패·저장소 5xx → 일시적 연결 오류로 안내 (503)", async () => {
+  for (const mode of ["throw", "http500"]) {
+    logs.length = 0;
+    writeFail = (cmd) => (SET_INTRO(cmd) ? mode : null);
+    const r = await save({ intro: "none", password: PASSWORD });
+    assert.equal(r.status, 503, mode);
+    assert.equal(r.body.error, "store_unreachable", mode);
+    assert.match(r.body.message, /잠시 연결하지 못했어요/);
+    noLeak(r);
+  }
+  assert.equal(store.has(INTRO_KEY), false);
+});
+
+test("인트로 키 쓰기만 실패하고 __probe 쓰기는 되면 점검 결과는 성공, 점검 키는 남지 않음", async () => {
+  writeFail = (cmd) => (SET_INTRO(cmd) ? "noperm" : null);
+  const r = await save({ intro: "none", password: PASSWORD });
+  assert.equal(r.body.error, "store_denied");
+  assert.match(logs.join("\n"), /쓰기 점검\(hub:settings:__probe\): 성공/);
+  assert.equal(store.has(PROBE_KEY), false, "점검 키는 지움");
+});
+
+test("probeWrite: 성공이면 쓰고 지움, 실패면 단계와 코드만 (값·토큰 없음)", async () => {
+  assert.deepEqual(await probeWrite(), { ok: true });
+  assert.deepEqual(sent.map((s) => s.cmd), [["SET", PROBE_KEY, "1", "EX", "60"], ["DEL", PROBE_KEY]]);
+  writeFail = () => "noperm";
+  assert.deepEqual(await probeWrite(), { ok: false, step: "SET", error: "store_denied", code: "NOPERM" });
+  delete process.env.HUB_SETTINGS_WRITE_TOKEN;
+  assert.deepEqual(await probeWrite(), { ok: false, step: "SET", error: "not_configured", code: null });
+});
+
+test("점검 키 __probe 는 SET(EX)·DEL 만 허용, 비슷한 다른 키는 거부", () => {
+  assert.doesNotThrow(() => assertAllowed(["SET", PROBE_KEY, "1", "EX", "60"]));
+  assert.doesNotThrow(() => assertAllowed(["DEL", PROBE_KEY]));
+  for (const k of ["hub:settings:__probe2", "hub:settings:__probe:x", "hub:settings:_probe"]) {
+    assert.throws(() => assertAllowed(["SET", k, "1"]), SettingsKeyBlocked, k);
+  }
+});
+
+test("서버 설정 누락은 무엇이 빠졌는지(비밀번호 / 저장소 설정) 나눠 안내, 접속 주소 불일치도 따로 안내", async () => {
+  delete process.env.HUB_ADMIN_PASSWORD;
+  let r = await save({ intro: "none", password: PASSWORD });
+  assert.equal(r.body.error, "not_configured");
+  assert.match(r.body.message, /관리 비밀번호 환경변수/);
+  process.env.HUB_ADMIN_PASSWORD = PASSWORD;
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  r = await save({ intro: "none", password: PASSWORD });
+  assert.equal(r.body.error, "not_configured");
+  assert.match(r.body.message, /쓰기 토큰 환경변수/);
+  process.env.UPSTASH_REDIS_REST_URL = URL_;
+  r = await save({ intro: "none", password: PASSWORD }, { origin: "https://evil.example" });
+  assert.equal(r.body.error, "bad_origin");
+  assert.match(r.body.message, /접속 주소/);
+  assert.equal(sent.length, 0);
 });

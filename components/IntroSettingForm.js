@@ -12,6 +12,14 @@ const OPTIONS = [
   { value: "none", label: "없음", desc: "연출 없이 바로 첫 화면", preview: "/?intro=none" },
 ];
 const LABEL = { warp: "워프", none: "없음", data: "데이터" };
+// 서버가 안내 문구를 주지 못한 경우(JSON 이 아닌 응답 등)에만 쓰는 상태 코드별 안내
+function fallbackMessage(status) {
+  if (status === 403) return "접속 주소가 사이트 주소와 달라 저장할 수 없어요.";
+  if (status === 429) return "요청이 너무 많아요. 잠시 뒤 다시 해 주세요.";
+  if (status === 503 || status === 504) return "서버에 잠시 연결하지 못했어요. 잠시 뒤 다시 해 주세요.";
+  if (status >= 500) return "서버에서 저장을 처리하지 못했어요. 계속되면 서버 로그를 확인해 주세요.";
+  return `저장하지 못했어요 (${status}).`;
+}
 
 export default function IntroSettingForm({ current }) {
   const [saved, setSaved] = useState(current);
@@ -43,7 +51,7 @@ export default function IntroSettingForm({ current }) {
         setSaved(data.intro);
         setResult({ kind: "ok", text: data.message });
       } else {
-        setResult({ kind: "error", text: data.message || `저장하지 못했어요 (${res.status}).` });
+        setResult({ kind: "error", text: typeof data.message === "string" && data.message ? data.message : fallbackMessage(res.status) });
       }
     } catch {
       setResult({ kind: "error", text: "서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요." });
