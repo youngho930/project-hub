@@ -27,6 +27,12 @@ export default function CountUp({ value, className = "" }) {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let frame = 0;
+    // 첫 방문 data 인트로 중이면 연출이 숫자를 모아 이 자리에서 진짜 카드로 바뀌므로 올라가는 움직임 없이 최종 값
+    // (public/hero-data.js — <html class="hub-data"> 는 연출이 끝나면 없어짐)
+    if (document.documentElement.classList.contains("hub-data")) {
+      frame = requestAnimationFrame(() => setPhase("done"));
+      return () => cancelAnimationFrame(frame);
+    }
     const run = () => {
       const start = performance.now();
       const tick = (now) => {

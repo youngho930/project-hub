@@ -384,8 +384,9 @@ export default async function Home() {
         <noscript>
           <style>{".count-up{opacity:1!important}"}</style>
         </noscript>
-        {/* 640px 미만: 납작한 가로 줄(왼쪽 숫자, 오른쪽 라벨·설명) 세 개 / 이상: 세로 카드 세 칸 */}
-        <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-4">
+        {/* 640px 미만: 납작한 가로 줄(왼쪽 숫자, 오른쪽 라벨·설명) 세 개 / 이상: 세로 카드 세 칸.
+            data-hub-stats: 첫 방문 data 인트로가 숫자를 이 카드 숫자 자리에 맞춰 모음 (public/hero-data.js) */}
+        <ul data-hub-stats className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-4">
           {profile.highlights.map((item) => (
             <li key={item.label}>
               <Link

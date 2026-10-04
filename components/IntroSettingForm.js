@@ -8,7 +8,7 @@ import { useState } from "react";
 // 비밀번호는 화면 상태(메모리)에만 잠깐 있고 localStorage·sessionStorage·쿠키에는 넣지 않는다.
 const OPTIONS = [
   { value: "warp", label: "워프", desc: "별빛이 모였다가 열리는 지금의 연출", preview: "/?intro=warp" },
-  { value: "data", label: "데이터", desc: "준비 중", preview: null, disabled: true },
+  { value: "data", label: "데이터", desc: "흩어진 업무 데이터가 성과 숫자로 모이는 연출", preview: "/?intro=data" },
   { value: "none", label: "없음", desc: "연출 없이 바로 첫 화면", preview: "/?intro=none" },
 ];
 const LABEL = { warp: "워프", none: "없음", data: "데이터" };
@@ -137,7 +137,7 @@ export default function IntroSettingForm({ current }) {
         </label>
         <button
           type="submit"
-          disabled={busy || choice === "data"}
+          disabled={busy}
           className="min-h-11 shrink-0 rounded-lg bg-accent px-5 text-body font-semibold text-bg transition hover:brightness-110 disabled:opacity-60"
         >
           {busy ? "저장 중…" : "저장"}

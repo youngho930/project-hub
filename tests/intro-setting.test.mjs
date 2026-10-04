@@ -163,11 +163,21 @@ test("다른 IP 는 잠금 영향 없음, 성공하면 실패 횟수 초기화",
 });
 
 /* ===== 인트로 값 ===== */
-test("data 는 준비 중으로 거부, 그 밖의 값도 모두 거부 (비밀번호 시도로 세지 않음)", async () => {
+test("data 저장 성공 → 설정 키에 data, 첫 화면을 만들 때 읽는 값과 head 스크립트에 반영", async () => {
   let r = await save({ intro: "data", password: PASSWORD });
-  assert.equal(r.status, 422);
-  assert.match(r.body.message, /준비 중/);
-  for (const intro of ["", "WARP", "Warp", "foo", "warp ", 1, null, undefined, ["warp"]]) {
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.saved, { from: "warp", to: "data" });
+  assert.equal(store.get(INTRO_KEY).v, "data");
+  assert.match(r.body.message, /데이터/);
+  assert.equal(await getIntroMode(), "data");
+  assert.match(arrivalScript(await getIntroMode()), /^try\{var M="data",/);
+  r = await save({ intro: "none", password: PASSWORD });
+  assert.deepEqual(r.saved, { from: "data", to: "none" }, "이전 값 data 도 그대로 기록");
+});
+
+test("그 밖의 인트로 값은 모두 거부 (비밀번호 시도로 세지 않음)", async () => {
+  let r;
+  for (const intro of ["", "WARP", "Warp", "DATA", "Data", "data ", "foo", "warp ", 1, null, undefined, ["warp"], ["data"]]) {
     r = await save({ intro, password: PASSWORD });
     assert.equal(r.status, 400, "거부: " + JSON.stringify(intro));
   }
@@ -272,7 +282,9 @@ test("설정 읽기에 실패하면 warp (네트워크 오류·500·잘못된 �
   store.delete(INTRO_KEY);
   assert.equal(await getIntroMode(), "warp", "값 없음");
   store.set(INTRO_KEY, { v: "data", exp: 0 });
-  assert.equal(await getIntroMode(), "warp", "data → warp");
+  assert.equal(await getIntroMode(), "data", "data 는 그대로");
+  store.set(INTRO_KEY, { v: "DATA", exp: 0 });
+  assert.equal(await getIntroMode(), "warp", "대문자 등 모르는 값 → warp");
   store.set(INTRO_KEY, { v: "<script>", exp: 0 });
   assert.equal(await getIntroMode(), "warp", "모르는 값");
   assert.ok(sent.filter((s) => s.cmd[0] === "GET").every((s) => s.token === READ_TOKEN), "읽기는 읽기 전용 토큰");
@@ -290,7 +302,12 @@ test("head 스크립트: 설정값·미리보기 주소에 따라 연출을 켜�
   assert.ok(off(runArrival("none", { visited: true, search: "?intro" })), "?intro = 설정(none)");
   assert.ok(on(runArrival("none", { visited: true, search: "?intro=warp" })), "?intro=warp 는 설정과 상관없이");
   assert.ok(off(runArrival("warp", { visited: true, search: "?intro=none" })), "?intro=none 은 설정과 상관없이");
-  assert.ok(on(runArrival("none", { visited: true, search: "?intro=data" })), "?intro=data → warp");
+  const dataOn = (r) => r.classes.has("hub-intro") && r.classes.has("hub-cover") && r.classes.has("hub-data") && r.appended.includes("/hero-data.js") && !r.appended.includes("/hero-intro.js");
+  assert.ok(dataOn(runArrival("none", { visited: true, search: "?intro=data" })), "?intro=data → data 연출 (설정과 상관없이)");
+  assert.ok(dataOn(runArrival("warp", { search: "?intro=data" })), "?intro=data 첫 방문");
+  assert.equal(runArrival("warp", { search: "?intro=data&debug" }).log.mode, "data");
+  assert.ok(off(runArrival("warp", { search: "?intro=data", reduced: true })), "data 도 동작 줄이기면 생략");
+  assert.ok(!runArrival("warp").classes.has("hub-data"), "워프는 hub-data 없음");
   assert.ok(on(runArrival("none", { visited: true, search: "?x=1&intro=warp&debug" })), "다른 값과 같이");
   assert.ok(off(runArrival("warp", { reduced: true })), "동작 줄이기면 생략");
   assert.equal(runArrival("warp", { reduced: true }).log.reason, "동작 줄이기 설정으로 생략");
@@ -302,9 +319,27 @@ test("head 스크립트: 설정값·미리보기 주소에 따라 연출을 켜�
   assert.equal(runArrival("warp", {}).log.debug, false);
 });
 
-test("설정값은 정해진 두 값만 스크립트에 들어감 (다른 문자열은 warp)", () => {
+test("data 설정: 첫 방문·?intro·?intro=data 는 data 연출, ?intro=warp·?intro=none 미리보기는 설정과 상관없이", () => {
+  const dataOn = (r) => r.classes.has("hub-intro") && r.classes.has("hub-cover") && r.classes.has("hub-data") && r.appended.includes("/hero-data.js") && !r.appended.includes("/hero-intro.js");
+  const warpOn = (r) => r.classes.has("hub-intro") && !r.classes.has("hub-data") && r.appended.includes("/hero-intro.js") && !r.appended.includes("/hero-data.js");
+  const off = (r) => r.classes.size === 0 && r.appended.length === 0;
+  assert.ok(dataOn(runArrival("data")), "첫 방문 → data");
+  assert.equal(runArrival("data").log.mode, "data");
+  assert.ok(off(runArrival("data", { visited: true })), "두 번째 방문 → 연출 없음");
+  assert.ok(dataOn(runArrival("data", { visited: true, search: "?intro" })), "?intro = 설정(data)");
+  assert.ok(dataOn(runArrival("data", { visited: true, search: "?intro=data" })), "?intro=data");
+  assert.ok(warpOn(runArrival("data", { visited: true, search: "?intro=warp" })), "?intro=warp 미리보기");
+  assert.ok(off(runArrival("data", { visited: true, search: "?intro=none" })), "?intro=none 미리보기");
+  assert.equal(runArrival("data", { search: "?intro=none" }).log.reason, "인트로 설정: 없음");
+  assert.ok(off(runArrival("data", { reduced: true })), "동작 줄이기면 data 도 생략");
+  assert.ok(off(runArrival("data", { pathname: "/graph" })), "다른 주소로 처음 들어오면 기록만");
+  assert.equal(runArrival("data", { search: "?intro&debug" }).log.debug, true);
+});
+
+test("설정값은 정해진 세 값만 스크립트에 들어감 (다른 문자열은 warp)", () => {
   assert.equal(normalizeIntroMode("none"), "none");
-  for (const v of ["warp", "data", "", null, undefined, "</script><script>alert(1)</script>"]) assert.equal(normalizeIntroMode(v), "warp");
+  assert.equal(normalizeIntroMode("data"), "data");
+  for (const v of ["warp", "", "Data", null, undefined, "</script><script>alert(1)</script>"]) assert.equal(normalizeIntroMode(v), "warp");
   assert.ok(!arrivalScript("</script>").includes("</script>"));
   assert.match(arrivalScript("none"), /^try\{var M="none",/);
 });
