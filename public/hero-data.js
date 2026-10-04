@@ -122,36 +122,61 @@
     return Math.max(0, Math.min(SHADES - 1, Math.floor(s * SHADES)));
   }
 
-  // 세 숫자를 둘 자리: 실제 카드가 첫 화면 안에 다 보이면 그 자리(match), 아니면 화면 가운데(center)
-  function layout(w, h, measure) {
-    var els = Array.prototype.slice.call(document.querySelectorAll("[data-hub-stats] .count-up"), 0, 3);
-    var items = [];
-    var fit = els.length === 3;
-    for (var i = 0; fit && i < 3; i++) {
-      var r = els[i].getBoundingClientRect();
-      if (r.width < 4 || r.top < 0 || r.bottom > h - 4 || r.left < 0 || r.right > w) fit = false;
+  // 실제로 보이는 영역: visualViewport (앱 안 브라우저의 도구 막대·확대를 뺀 영역). 없으면 창 크기
+  function visibleArea() {
+    var vv = window.visualViewport;
+    return vv ? { top: vv.offsetTop, left: vv.offsetLeft, w: vv.width, h: vv.height } : { top: 0, left: 0, w: innerWidth, h: innerHeight };
+  }
+  function statEls() {
+    return Array.prototype.slice.call(document.querySelectorAll("[data-hub-stats] .count-up"), 0, 3);
+  }
+  function rectsOf(els) {
+    return els.map(function (el) { var r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  }
+  // 두 위치 목록의 가장 큰 차이(px): 가로·세로 위치와 크기 중 가장 많이 달라진 값
+  function maxDiff(a, b) {
+    var d = 0;
+    for (var i = 0; i < Math.min(a.length, b.length); i++) {
+      d = Math.max(d, Math.abs(a[i].x - b[i].x), Math.abs(a[i].y - b[i].y), Math.abs(a[i].w - b[i].w), Math.abs(a[i].h - b[i].h));
     }
-    if (fit) {
-      for (i = 0; i < 3; i++) {
-        var el = els[i], rect = el.getBoundingClientRect(), f = fontOf(el);
-        measure.font = f.css;
-        var m = measure.measureText("0");
-        var asc = m.fontBoundingBoxAscent || f.size * 0.95, desc = m.fontBoundingBoxDescent || f.size * 0.25;
-        // CSS 줄 상자: 글꼴 높이(ascent+descent)를 줄 높이 가운데에 두고 위아래로 반씩 여백 → 기준선
-        items.push({
-          text: (el.textContent || FALLBACK[i]).trim(),
-          font: f,
-          x: rect.left,
-          baseline: rect.top + (rect.height - (asc + desc)) / 2 + asc,
-          box: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
-          el: el,
-        });
-      }
-      return { mode: "match", items: items };
+    return Math.round(d * 10) / 10;
+  }
+  // 세 카드가 보이는 영역 안에 다 들어오는지
+  function cardsFit(rects) {
+    if (rects.length !== 3) return false;
+    var va = visibleArea();
+    for (var i = 0; i < 3; i++) {
+      var r = rects[i];
+      if (r.w < 4 || r.y < va.top || r.y + r.h > va.top + va.h - 4 || r.x < va.left || r.x + r.w > va.left + va.w) return false;
     }
-    // 가운데: 한 줄에 들어가면 가로로(사이는 글자 크기의 0.7), 아니면 세 줄로
+    return true;
+  }
+
+  // 카드 자리(match): 세 카드가 보이는 영역 안에 다 있으면 카드 숫자 자리·글꼴 그대로, 아니면 null
+  function matchLayout(measure) {
+    var els = statEls();
+    if (!cardsFit(rectsOf(els))) return null;
+    return els.map(function (el, i) {
+      var rect = el.getBoundingClientRect(), f = fontOf(el);
+      measure.font = f.css;
+      var m = measure.measureText("0");
+      var asc = m.fontBoundingBoxAscent || f.size * 0.95, desc = m.fontBoundingBoxDescent || f.size * 0.25;
+      // CSS 줄 상자: 글꼴 높이(ascent+descent)를 줄 높이 가운데에 두고 위아래로 반씩 여백 → 기준선
+      return {
+        text: (el.textContent || FALLBACK[i]).trim(),
+        font: f,
+        x: rect.left,
+        baseline: rect.top + (rect.height - (asc + desc)) / 2 + asc,
+        box: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
+      };
+    });
+  }
+  // 가운데(center): 보이는 영역 가운데에. 한 줄에 들어가면 가로로(사이는 글자 크기의 0.7), 아니면 줄여서
+  function centerLayout(w, measure) {
+    var els = statEls(), items = [], i;
     var texts = els.length === 3 ? els.map(function (e) { return (e.textContent || "").trim(); }) : FALLBACK;
     var ref = els[0] || document.body;
+    var va = visibleArea();
     var size = Math.min(72, Math.max(34, w * 0.13));
     var f0 = fontOf(ref, size);
     measure.font = f0.css;
@@ -167,12 +192,12 @@
     }
     var mm = measure.measureText("0");
     var a0 = mm.fontBoundingBoxAscent || size * 0.95, d0 = mm.fontBoundingBoxDescent || size * 0.25;
-    var x = (w - total) / 2, base = h / 2 + (a0 - d0) / 2;
+    var x = (w - total) / 2, base = va.top + va.h / 2 + (a0 - d0) / 2;
     for (i = 0; i < 3; i++) {
       items.push({ text: texts[i], font: f0, x: x, baseline: base, box: { x: x, y: base - a0, w: widths[i], h: a0 + d0 } });
       x += widths[i] + gap;
     }
-    return { mode: "center", items: items };
+    return items;
   }
 
   // 글자 모양의 점 위치를 한 번만 뽑음: 작은 캔버스에 글자를 그리고 step 간격 격자에서 칠해진 곳만
@@ -323,14 +348,21 @@
   function run(opts) {
     var canvas = document.createElement("canvas");
     canvas.setAttribute("aria-hidden", "true");
-    canvas.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;z-index:10000;pointer-events:none;opacity:0";
+    // 크기는 px 로 정함: 100vw·100vh 로 늘려 보이면, 연출 중 화면 높이가 바뀔 때(앱 안 브라우저의 도구 막대)
+    // 그림 전체가 세로로 눌리거나 늘어나 숫자가 실제 카드와 어긋남. 화면 크기가 바뀌면 캔버스를 그 크기로 다시 만듦
+    canvas.style.cssText = "position:fixed;left:0;top:0;z-index:10000;pointer-events:none;opacity:0";
     document.body.appendChild(canvas);
     var ctx = canvas.getContext("2d");
     var w = innerWidth, h = innerHeight, M = Math.min(w, h);
     var B = budget(w, h);
-    canvas.width = Math.round(w * B.dpr);
-    canvas.height = Math.round(h * B.dpr);
-    ctx.setTransform(B.dpr, 0, 0, B.dpr, 0, 0);
+    function sizeCanvas() {
+      canvas.width = Math.round(w * B.dpr);
+      canvas.height = Math.round(h * B.dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(B.dpr, 0, 0, B.dpr, 0, 0);
+    }
+    sizeCanvas();
 
     var bg = makeBackground(w, h);
     var sprites = makeShardSprites(B.dpr);
@@ -342,10 +374,17 @@
     var snapColor = "rgb(255,247,222)";
 
     // 점: 글자를 이루는 점(target 있음) + 빨려 들어가 사라지는 점. 같은 배열에 값만 담음 (프레임마다 새 객체 없음)
-    var N = 0, P = null, items = null, mode = "center", textSprites = [], glowSprites = [];
+    // 숫자 자리 두 벌: 카드 자리(setM, 카드가 보이는 영역 안에 다 있을 때만)와 가운데(setC).
+    // 점 개수는 둘이 같아서(K) 모이기 직전까지 어느 쪽으로든 바꿀 수 있음 (cur = 지금 쓰는 쪽)
+    var N = 0, K = 0, P = null, setM = null, setC = null, cur = null, mode = "center";
     // 걷히는 시각: 카드 자리에 맞추면 1.3~1.7. 가운데 모음이면 숫자가 1.3~1.44 에 아래로 내려가며 사라진 뒤 1.46~1.74
     var revealAt = T_REVEAL, endAt = T_END;
     var CENTER_EXIT = 0.14;
+    var TOL = 2; // 연출 숫자와 실제 카드 숫자가 이만큼(px)보다 다르면 카드에 맞추지 않음
+    var aborted = null; // 카드 맞춤 취소: { at, start, dur, diff } — 숫자를 먼저 사라지게 하고 덮개를 걷음
+    // debug 기록: 처음 잰 카드 위치, 마지막 확인 때의 차이, 연출 중 화면 높이 변화
+    var align = { first: null, drift: null, mismatch: null, vh: [h], forcedCenter: false };
+    var measureCtx = document.createElement("canvas").getContext("2d");
     var shardList = [];
     var ready = false;
 
@@ -386,16 +425,8 @@
       p.sz[i] = rnd(1.6, 2.1);
     }
 
-    function build() {
-      var measure = document.createElement("canvas").getContext("2d");
-      var L = layout(w, h, measure);
-      mode = L.mode;
-      items = L.items;
-      if (mode === "center") {
-        revealAt = T_REVEAL + CENTER_EXIT + 0.02;
-        endAt = T_END + 0.04;
-      }
-      // 점 간격: 글자 크기에 비례, 전체가 예산을 넘으면 간격을 넓힘
+    // 글자 점 뽑기: 점 간격은 글자 크기에 비례, 전체가 예산을 넘으면 간격을 넓힘. 섞어서 앞에서부터 쓰면 글자 전체에 고르게
+    function samplePoints(items) {
       var step = Math.max(2.2, items[0].font.size / 15), pts, tries = 0;
       do {
         pts = items.map(function (it) { return sample(it, step); });
@@ -403,50 +434,96 @@
         if (total <= B.points * 2) break;
         step *= Math.sqrt(total / 2 / B.points);
       } while (++tries < 3);
-      var targets = [];
-      for (var k = 0; k < 3; k++) {
-        for (var j = 0; j < pts[k].length; j += 2) targets.push([pts[k][j], pts[k][j + 1], k]);
+      var list = [];
+      for (var k = 0; k < 3; k++) for (var j = 0; j < pts[k].length; j += 2) list.push([pts[k][j], pts[k][j + 1], k]);
+      for (k = list.length - 1; k > 0; k--) {
+        var r = Math.floor(Math.random() * (k + 1)), tmp = list[k];
+        list[k] = list[r];
+        list[r] = tmp;
       }
-      // 섞어서 앞에서부터 쓰면 글자 전체에 고르게 (느린 기기에서 뒤를 잘라도 모양이 남음)
-      for (k = targets.length - 1; k > 0; k--) {
-        var r = Math.floor(Math.random() * (k + 1)), tmp = targets[k];
-        targets[k] = targets[r];
-        targets[r] = tmp;
+      if (list.length > B.points) list.length = B.points;
+      return list;
+    }
+    // 한 벌의 목표 자리: 앞 K 개는 글자 점(모자라면 되풀이), 나머지는 무리 가운데로 빨려 들어가 사라지는 점
+    function makeSet(setMode, items, list) {
+      var st = {
+        mode: setMode, items: items,
+        tx: new Float32Array(N), ty: new Float32Array(N), jx: new Float32Array(N), jy: new Float32Array(N),
+        sh: new Uint8Array(N), grp: new Uint8Array(N),
+      };
+      for (var i = 0; i < N; i++) {
+        if (i < K) {
+          var t = list[i % list.length], it = items[t[2]];
+          st.tx[i] = t[0];
+          st.ty[i] = t[1];
+          st.grp[i] = t[2];
+          st.sh[i] = shadeAt(t[0], t[1], it.box);
+          // 완성 직전 살짝 흐트러져 있다가(글자 크기의 4%) 1.1~1.2초에 정확히 맞춰짐
+          st.jx[i] = rnd(-1, 1) * it.font.size * 0.04;
+          st.jy[i] = rnd(-1, 1) * it.font.size * 0.04;
+        } else {
+          var g = Math.floor(Math.random() * 3), bx = items[g].box;
+          st.grp[i] = g;
+          st.tx[i] = bx.x + bx.w * rnd(0.2, 0.8);
+          st.ty[i] = bx.y + bx.h * rnd(0.3, 0.7);
+          st.sh[i] = 1;
+        }
       }
-      if (targets.length > B.points) targets.length = B.points;
-      N = targets.length + B.ambient;
+      st.text = items.map(function (it) { return makeTextSprite(it, B.dpr, false); });
+      st.glow = items.map(function (it) { return makeTextSprite(it, B.dpr, true); });
+      return st;
+    }
+    function freeSet(st) {
+      if (st) st.text.concat(st.glow).forEach(function (x) { x.img.width = x.img.height = 0; });
+    }
+    function chooseSet(st) {
+      cur = st;
+      mode = st.mode;
+      // 걷히는 시각: 카드 자리 1.3~1.7, 가운데 1.46~1.74 (숫자가 먼저 사라진 뒤)
+      revealAt = mode === "center" ? T_REVEAL + CENTER_EXIT + 0.02 : T_REVEAL;
+      endAt = mode === "center" ? T_END + 0.04 : T_END;
+      stats.mode = mode;
+    }
+    // 글꼴이 캔버스에서 쓸 수 있게 준비됐는지 (준비 전에 카드에 맞추면 글자 모양·폭이 달라질 수 있음)
+    function fontsOk() {
+      var el = statEls()[0];
+      if (!el || !document.fonts || !document.fonts.check) return true;
+      // 목록의 첫 글꼴(사이트 글꼴)만 확인 — 뒤의 "pretendard Fallback"(next/font 가 만든 로컬 대체 글꼴)은
+      // 쓰이지 않으면 계속 unloaded 라서 목록 전체로 물으면 늘 false
+      try {
+        var cs = getComputedStyle(el);
+        return document.fonts.check(cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily.split(",")[0], "30초8배6개월+");
+      } catch (e) {
+        return true;
+      }
+    }
+
+    function build() {
+      align.first = rectsOf(statEls());
+      var mi = fontsOk() ? matchLayout(measureCtx) : null;
+      if (!mi && cardsFit(align.first)) align.forcedCenter = true; // 카드는 보이지만 글꼴 준비 전 → 일단 가운데, 모이기 전에 다시 봄
+      var itemsC = centerLayout(w, measureCtx);
+      var listC = samplePoints(itemsC);
+      var listM = mi ? samplePoints(mi) : null;
+      K = Math.min(listC.length, listM ? listM.length : Infinity, B.points);
+      N = K + B.ambient;
       P = {
         sx: new Float32Array(N), sy: new Float32Array(N), vx: new Float32Array(N), vy: new Float32Array(N),
-        tx: new Float32Array(N), ty: new Float32Array(N), jx: new Float32Array(N), jy: new Float32Array(N),
         dl: new Float32Array(N), sw: new Float32Array(N), ph: new Float32Array(N), sz: new Float32Array(N),
-        sh: new Uint8Array(N), tg: new Uint8Array(N), grp: new Uint8Array(N),
+        tg: new Uint8Array(N),
       };
       var frags = makeFrags();
       for (var i = 0; i < N; i++) {
         scatter(P, i);
         // 앞쪽 절반은 표 조각 무리에 (섞여 있으므로 어느 글자로 가든 고르게, 무리가 꽉 차면 낱점으로)
         if (i < N * 0.5) placeInFrag(P, i, frags[i % frags.length]);
-        var t = targets[i];
-        if (t) {
-          P.tg[i] = 1;
-          P.tx[i] = t[0];
-          P.ty[i] = t[1];
-          P.grp[i] = t[2];
-          P.sh[i] = shadeAt(t[0], t[1], items[t[2]].box);
-          // 완성 직전 살짝 흐트러져 있다가(글자 크기의 4%) 1.1~1.2초에 정확히 맞춰짐
-          P.jx[i] = rnd(-1, 1) * items[t[2]].font.size * 0.04;
-          P.jy[i] = rnd(-1, 1) * items[t[2]].font.size * 0.04;
-        } else {
-          // 글자에 들지 않는 점: 가까운 무리의 가운데로 빨려 들어가며 사라짐
-          var g = Math.floor(Math.random() * 3), bx = items[g].box;
-          P.grp[i] = g;
-          P.tx[i] = bx.x + bx.w * rnd(0.2, 0.8);
-          P.ty[i] = bx.y + bx.h * rnd(0.3, 0.7);
-          P.sh[i] = 1;
-        }
+        P.tg[i] = i < K ? 1 : 0;
         P.dl[i] = rnd(0, 0.18); // 출발 시각 차이
         P.sw[i] = rnd(0.25, 1) * (Math.random() < 0.5 ? -1 : 1) * M * 0.14; // 빨려 들어갈 때 휘는 정도
       }
+      setC = makeSet("center", itemsC, listC);
+      setM = mi ? makeSet("match", mi, listM) : null;
+      chooseSet(setM || setC);
       // 업무 조각(숫자·표 칸·체크·막대): 각자 떠다니며 천천히 흔들리다가, 모일 때 글자 쪽으로 끌려가며 사라짐
       shardList.length = 0;
       var kinds = [];
@@ -463,28 +540,117 @@
           r: rnd(-0.35, 0.35), sway: rnd(0.16, 0.32) * (Math.random() < 0.5 ? -1 : 1), fq: rnd(2.2, 3.4), ph: rnd(0, 6.28), bob: rnd(4, 7),
         });
       }
-      textSprites = items.map(function (it) { return makeTextSprite(it, B.dpr, false); });
-      glowSprites = items.map(function (it) { return makeTextSprite(it, B.dpr, true); });
       ready = true;
     }
 
-    // 실제 카드가 그사이 움직였으면(글꼴 교체·레이아웃 변화) 같은 만큼 옮김 — 한 번만
-    var rechecked = false;
-    function recheck() {
-      rechecked = true;
-      if (mode !== "match") return;
-      var r = items[0].el.getBoundingClientRect();
-      var dx = r.left - items[0].box.x, dy = r.top - items[0].box.y;
-      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
-      logEvent("숫자 카드 위치가 바뀌어 " + Math.round(dx) + "," + Math.round(dy) + "px 옮김");
-      for (var i = 0; i < N; i++) {
-        P.tx[i] += dx;
-        P.ty[i] += dy;
-      }
+    // 같은 크기로 위치만 바뀌었으면 그만큼 옮김 (무리별로)
+    function shiftSet(st, mi) {
+      var moved = 0;
       for (var k = 0; k < 3; k++) {
-        textSprites[k].x += dx; textSprites[k].y += dy;
-        glowSprites[k].x += dx; glowSprites[k].y += dy;
+        var dx = mi[k].box.x - st.items[k].box.x, dy = mi[k].box.y - st.items[k].box.y;
+        if (Math.abs(dx) < 0.25 && Math.abs(dy) < 0.25) continue;
+        moved = Math.max(moved, Math.abs(dx), Math.abs(dy));
+        for (var i = 0; i < N; i++) {
+          if (st.grp[i] !== k) continue;
+          st.tx[i] += dx;
+          st.ty[i] += dy;
+        }
+        st.text[k].x += dx; st.text[k].y += dy;
+        st.glow[k].x += dx; st.glow[k].y += dy;
+        st.items[k] = mi[k];
       }
+      return Math.round(moved);
+    }
+    function sameSize(a, b) {
+      for (var k = 0; k < 3; k++) {
+        if (a[k].font.size !== b[k].font.size || Math.abs(a[k].box.w - b[k].box.w) > 0.5 || Math.abs(a[k].box.h - b[k].box.h) > 0.5 || a[k].text !== b[k].text) return false;
+      }
+      return true;
+    }
+    // 숫자 자리 다시 보기
+    // - 모이기 전(점이 아직 출발 전): 카드가 보이는 영역 안에 다 있고 글꼴이 준비됐으면 카드 자리로(위치가 바뀌었으면 옮기거나 새로 뽑음),
+    //   아니면 가운데로. 화면 크기가 바뀌었으면 가운데 자리도 새로
+    // - 모이기 시작한 뒤: 카드에 맞추는 중인데 실제 카드 숫자 위치가 TOL 보다 달라지면 맞춤 취소.
+    //   (화면 높이만 바뀌어 카드 일부가 가려진 경우는 위치가 그대로라 숫자도 그대로 맞으므로 취소하지 않음)
+    function evaluate(t, why) {
+      if (aborted || !ready) return;
+      var rects = rectsOf(statEls());
+      if (t < T_GATHER) {
+        var mi = fontsOk() ? matchLayout(measureCtx) : null;
+        if (mi) {
+          if (setM && sameSize(setM.items, mi)) {
+            var moved = shiftSet(setM, mi);
+            if (moved) logEvent("모이기 전 다시 잼: 카드 위치 " + moved + "px 옮김");
+          } else {
+            freeSet(setM);
+            setM = makeSet("match", mi, samplePoints(mi));
+            logEvent("모이기 전 다시 잼: 카드 자리를 새로 뽑음");
+          }
+          if (cur !== setM) logEvent("모이기 전 다시 잼: 카드에 맞춤으로 바꿈");
+          chooseSet(setM);
+        } else {
+          if (why === "resize") {
+            freeSet(setC);
+            var itemsC = centerLayout(w, measureCtx);
+            setC = makeSet("center", itemsC, samplePoints(itemsC));
+          }
+          if (cur === setM) logEvent("모이기 전 다시 잼: 카드가 보이는 영역 밖 → 가운데 모음");
+          chooseSet(setC);
+        }
+        return;
+      }
+      if (mode !== "match") return;
+      var mis = maxDiff(rects, cur.items.map(function (it) { return it.box; }));
+      align.mismatch = mis;
+      if (mis <= TOL) return;
+      // 맞춤 취소: 숫자는 모인 자리에서 아래로 내려가며 먼저 사라지고, 그 뒤에 덮개가 걷힘 (페이지 글자와 어긋나게 겹치지 않음).
+      // 덮개가 이미 걷히는 중이면 움직이지 않고 그 자리에서 바로 감춤
+      var late = cuedReveal;
+      var startAt = late ? t : Math.max(t, 1.26), dur = late ? 0.001 : CENTER_EXIT;
+      aborted = { at: Math.round(t * 1000), start: startAt, dur: dur, diff: mis, late: late };
+      if (!late) {
+        revealAt = startAt + dur + 0.02;
+        endAt = revealAt + 0.28;
+      }
+      stats.mode = "match-aborted";
+      logEvent((why === "resize" ? "화면 크기 변화" : why === "layout" ? "페이지 밀림" : "마지막 확인") + ": 카드 위치 " + mis + "px 다름 → " + (late ? "숫자를 바로 감춤" : "숫자를 먼저 사라지게"));
+    }
+
+    // 화면 크기가 바뀌면 캔버스를 그 크기로 다시 만들고(그림이 눌리거나 늘어나지 않게) 숫자 자리를 다시 봄
+    var dirty = false;
+    function onViewport() {
+      dirty = true;
+      if (!begun && !done) applyResize(); // 움직이기 전이면 바로
+    }
+    function applyResize() {
+      dirty = false;
+      var nw = innerWidth, nh = innerHeight;
+      if (nw === w && nh === h) return false;
+      if (align.vh[align.vh.length - 1] !== nh && align.vh.length < 6) {
+        align.vh.push(nh);
+        logEvent("화면 높이 " + h + "→" + nh + "px");
+      }
+      w = nw;
+      h = nh;
+      M = Math.min(w, h);
+      sizeCanvas();
+      bg.width = bg.height = 0;
+      bg = makeBackground(w, h);
+      return true;
+    }
+    addEventListener("resize", onViewport);
+    if (window.visualViewport) visualViewport.addEventListener("resize", onViewport);
+    // 페이지가 밀리는 것 감지: 본문(main)·body 의 크기가 바뀌면(카드 위쪽 내용이 늘거나 줄면) 다음 프레임에 숫자 자리를 다시 확인
+    var layoutDirty = false, ro = null;
+    try {
+      ro = new ResizeObserver(function () {
+        if (begun) layoutDirty = true;
+      });
+      var mainEl = document.querySelector("main");
+      if (mainEl) ro.observe(mainEl, { box: "border-box" });
+      ro.observe(document.body, { box: "border-box" });
+    } catch (e) {
+      ro = null;
     }
 
     var buckets = [];
@@ -502,7 +668,7 @@
       bk.n++;
     }
 
-    var stats = { frames: 0, intervals: [], at: [], points: 0, reduced: false, maxGap: 0, stalls: 0, stallTotal: 0, mode: "" };
+    var stats = { frames: 0, intervals: [], at: [], points: 0, reduced: false, maxGap: 0, stalls: 0, stallTotal: 0, mode: "", vis: { text: 0, bg: 1, x: 0, y: 0, h: 0 } };
     window.__hubIntroStats = stats;
 
     // 한 프레임: t 초 장면
@@ -538,21 +704,21 @@
           } else {
             p = clamp01((t - tStart) / (T_FORM - 0.04 - tStart));
             var e = suck(p);
-            var jx = P.jx[i] * (1 - snapK), jy = P.jy[i] * (1 - snapK);
-            var txi = P.tx[i] + jx, tyi = P.ty[i] + jy;
+            var jx = cur.jx[i] * (1 - snapK), jy = cur.jy[i] * (1 - snapK);
+            var txi = cur.tx[i] + jx, tyi = cur.ty[i] + jy;
             var dx = txi - fx, dy = tyi - fy, len = Math.hypot(dx, dy) || 1;
             var bend = Math.sin(Math.PI * e) * P.sw[i] * Math.min(1, len / (M * 0.6));
             x = fx + dx * e - (dy / len) * bend;
             y = fy + dy * e + (dx / len) * bend;
           }
-          var size = P.sz[i] + (P.tg[i] ? (items[P.grp[i]].font.size / 22 - P.sz[i]) * smooth(p) : 0);
+          var size = P.sz[i] + (P.tg[i] ? (cur.items[cur.grp[i]].font.size / 22 - P.sz[i]) * smooth(p) : 0);
           if (!P.tg[i]) {
             // 글자에 들지 않는 점: 도착할수록 작아지며 사라짐
             var fade = 1 - clamp01((p - 0.55) / 0.4);
             if (fade <= 0.02) continue;
             size *= fade;
           }
-          var bi = flash > 0.5 && P.tg[i] ? SHADES * LEVELS : P.sh[i] * LEVELS + Math.round(smooth(p) * (LEVELS - 1));
+          var bi = flash > 0.5 && P.tg[i] ? SHADES * LEVELS : cur.sh[i] * LEVELS + Math.round(smooth(p) * (LEVELS - 1));
           push(bi, x, y, size);
         }
         // 묶음마다 한 번에 칠함
@@ -579,8 +745,8 @@
           var ox = sd.x + sd.vx * tf2, oy = sd.y + sd.vy * tf2 + Math.sin(sd.ph + t * sd.fq) * sd.bob;
           if (pp > 0) {
             var e2 = suck(clamp01(pp * 0.6));
-            ox += (P.tx[ii] - ox) * e2;
-            oy += (P.ty[ii] - oy) * e2;
+            ox += (cur.tx[ii] - ox) * e2;
+            oy += (cur.ty[ii] - oy) * e2;
           }
           var rot = sd.r + Math.sin(sd.ph + t * sd.fq * 0.8) * sd.sway, im = sd.img;
           var cs = Math.cos(rot) * B.dpr, sn = Math.sin(rot) * B.dpr;
@@ -594,25 +760,34 @@
 
       // 완성 순간 빛 번짐 (가산 혼합) → 완성 글자
       // 카드 자리: 실제 카드 숫자와 같은 자리라 걷힌 뒤 살짝 늦게 사라짐.
-      // 가운데: 1.3 에 완성된 뒤 카드 쪽(아래)으로 22px 내려가며 사라짐 — 덮개가 걷히기 전에 다 사라져 페이지 글자 위에 남지 않음
-      var exitK = mode === "center" ? smooth(clamp01((t - T_REVEAL) / CENTER_EXIT)) : 0;
-      var textA = mode === "match"
+      // 가운데: 1.3 에 완성된 뒤 카드 쪽(아래)으로 22px 내려가며 사라짐 — 덮개가 걷히기 전에 다 사라져 페이지 글자 위에 남지 않음.
+      // 카드 맞춤 취소: 같은 방식으로 모인 자리에서 먼저 사라짐 (덮개가 걷히는 중에 취소되면 0.08초 만에)
+      var exiting = mode === "center" || !!aborted;
+      var exitK = exiting ? smooth(clamp01((t - (aborted ? aborted.start : T_REVEAL)) / (aborted ? aborted.dur : CENTER_EXIT))) : 0;
+      var textA = !exiting
         ? (t < 1.6 ? crisp : crisp * (1 - clamp01((t - 1.6) / 0.1)))
         : crisp * (1 - exitK);
-      var lift = mode === "center" ? 22 * exitK : 0;
+      var lift = exiting && !(aborted && aborted.late) ? 22 * exitK : 0;
       if (flash > 0.01) {
         ctx.globalCompositeOperation = "lighter";
         ctx.globalAlpha = flash * 0.85;
         for (var gi = 0; gi < 3; gi++) {
-          var gs = glowSprites[gi];
+          var gs = cur.glow[gi];
           ctx.drawImage(gs.img, gs.x, gs.y + lift, gs.w, gs.h);
         }
         ctx.globalCompositeOperation = "source-over";
       }
+      // 확인용 기록(값만 바꿈): 지금 그리는 숫자 자리·투명도와 덮개 투명도 — 측정 도구가 실제 카드 위치와 비교
+      var vis = stats.vis;
+      vis.text = textA;
+      vis.bg = bgA;
+      vis.x = cur.items[0].box.x;
+      vis.y = cur.items[0].box.y + lift;
+      vis.h = h;
       if (textA > 0.01) {
         ctx.globalAlpha = textA;
         for (var ti = 0; ti < 3; ti++) {
-          var ts = textSprites[ti];
+          var ts = cur.text[ti];
           ctx.drawImage(ts.img, ts.x, ts.y + lift, ts.w, ts.h);
         }
       }
@@ -621,7 +796,7 @@
 
     var start = performance.now(), last = start, frame = 0, done = false, begun = false;
     // 시각에 맞춘 알림: 1.3 숫자 완성 → "건너뛰기" 표시가 서서히 사라짐, revealAt → 덮개가 걷히며 소개 문구가 떠오름
-    var cuedLabel = false, cuedReveal = false;
+    var cuedLabel = false, cuedReveal = false, checkedGather = false, checkedFinal = false;
     function cues(t) {
       if (!cuedLabel && t >= T_REVEAL) { cuedLabel = true; if (opts.onLabelOff) opts.onLabelOff(); }
       if (!cuedReveal && t >= revealAt) { cuedReveal = true; if (opts.onReveal) opts.onReveal(); }
@@ -668,7 +843,16 @@
           stats.points = N;
         }
       }
-      if (!rechecked && t >= 1.0) recheck();
+      // 숫자 자리 다시 보기: 화면 크기가 바뀌었으면 바로, 모이기 직전(0.36초)에 한 번, 완성 직전(1.25초)에 마지막으로
+      if (dirty && applyResize()) evaluate(t, "resize");
+      // 페이지 레이아웃이 바뀌었으면(카드 위쪽 내용의 크기 변화) 다시 확인 — 매 프레임 위치를 읽지 않음
+      if (layoutDirty) { layoutDirty = false; evaluate(t, "layout"); }
+      if (!checkedGather && t >= 0.36) { checkedGather = true; evaluate(t, "gather"); }
+      if (!checkedFinal && t >= 1.25) {
+        checkedFinal = true;
+        align.drift = maxDiff(rectsOf(statEls()), align.first || []);
+        evaluate(t, "final");
+      }
       // 확인·캡처용: 측정 도구가 window.__hubIntroFreezeAt(초)을 넣었을 때만 그 장면에서 멈춰 둠 (방문자에게는 없음)
       var freezeAt = window.__hubIntroFreezeAt;
       if (typeof freezeAt === "number" && t >= freezeAt) {
@@ -687,8 +871,12 @@
       done = true;
       cancelAnimationFrame(frame);
       canvas.remove();
+      removeEventListener("resize", onViewport);
+      if (ro) ro.disconnect();
+      if (window.visualViewport) visualViewport.removeEventListener("resize", onViewport);
       bg.width = bg.height = 0;
-      textSprites.concat(glowSprites).forEach(function (s) { s.img.width = s.img.height = 0; });
+      freeSet(setM);
+      freeSet(setC);
       P = null;
       if (opts.onEnd) opts.onEnd();
     }
@@ -698,17 +886,31 @@
       if (opts.onSkip) opts.onSkip();
       finish();
     }
+    // 글꼴이 아직이면 document.fonts.ready 를 0.5초까지 기다린 뒤 시작 (그래도 아니면 가운데로 시작하고 모이기 전에 다시 봄)
     function begin() {
       if (begun || done) return;
       begun = true;
-      // 숫자 자리·글자 점은 페이지 준비가 끝난 지금 한 번만 계산 (레이아웃·글꼴이 자리 잡은 뒤)
+      if (fontsOk() || !document.fonts || !document.fonts.ready) return start2();
+      var go = false;
+      var once = function () {
+        if (go) return;
+        go = true;
+        start2();
+      };
+      document.fonts.ready.then(once, once);
+      setTimeout(once, 500);
+    }
+    function start2() {
+      if (done) return;
+      if (dirty) applyResize();
+      // 숫자 자리·글자 점: 페이지 준비가 끝난 지금 계산하고, 모이기 직전·완성 직전에 다시 확인
       try {
         build();
         stats.points = N;
-        stats.mode = mode;
+        stats.align = align;
         if (window.__hubIntroLog) {
           window.__hubIntroLog.begin = Math.round(performance.now());
-          logEvent("숫자 자리: " + (mode === "match" ? "실제 카드" : "화면 가운데") + " · 점 " + N + "개");
+          logEvent("맞춤: " + (mode === "match" ? "카드" : "가운데" + (align.forcedCenter ? "(글꼴 준비 전)" : "")) + " · 점 " + N + "개 · 화면 " + w + "×" + h);
         }
       } catch (err) {
         logReason("오류", err && err.message);
@@ -719,7 +921,7 @@
       // 준비 비용이 움직이기 전에 생기게. 그다음 첫 장면을 그리고 캔버스를 보이며 CSS 덮개를 걷음 —
       // 덮개 걷기(<html> 클래스 변경)를 연출 도중에 하지 않아 그 순간의 프레임 밀림이 없음
       ctx.globalAlpha = 0.004;
-      var warmList = sprites.digits.concat(sprites.cells, sprites.checks, sprites.bars, textSprites, glowSprites);
+      var warmList = sprites.digits.concat(sprites.cells, sprites.checks, sprites.bars, setC.text, setC.glow, setM ? setM.text.concat(setM.glow) : []);
       for (var wi = 0; wi < warmList.length; wi++) ctx.drawImage(warmList[wi].img, 0, 0);
       ctx.globalAlpha = 1;
       draw(0);
@@ -755,6 +957,13 @@
     return { skip: skip, finish: finish, begin: begin };
   }
 
+  // debug 기록용 맞춤 결과: 방식, 처음 잰 카드 위치와 마지막 확인 때의 차이, 연출 중 화면 높이
+  function alignText(s) {
+    var a = s.align || {};
+    var m = s.mode === "match" ? "카드에 맞춤" : s.mode === "match-aborted" ? "카드 맞춤 취소(숫자 먼저 사라짐)" : "가운데 모음";
+    return m + " · 처음↔마지막 위치 차이 " + (a.drift == null ? "-" : a.drift + "px") + " · 화면 높이 " + (a.vh || []).join("→") + "px";
+  }
+
   var intro = null;
   function prepareIntro() {
     var root = document.documentElement;
@@ -786,7 +995,7 @@
       onSkip: reveal,
       onEnd: function () {
         var s = window.__hubIntroStats;
-        logReason("정상 완료", s && "프레임 " + s.frames + "장 · 가장 긴 간격 " + s.maxGap + "ms" + (s.stalls ? " · 멈춤 보정 " + s.stalls + "회" : "") + " · " + (s.mode === "match" ? "실제 카드에 맞춤" : "화면 가운데"));
+        logReason("정상 완료", s && "프레임 " + s.frames + "장 · 가장 긴 간격 " + s.maxGap + "ms" + (s.stalls ? " · 멈춤 보정 " + s.stalls + "회" : "") + " · " + alignText(s));
         reveal();
         document.documentElement.classList.remove("hub-data", "hub-skip-off");
         window.__hubIntroRunning = false;
@@ -837,7 +1046,8 @@
     setTimeout(go, 2400);
   }
 
-  window.HubDataIntro = { version: 1 };
+  // 판정 함수는 자동 테스트(tests/)에서도 씀
+  window.HubDataIntro = { version: 2, cardsFit: cardsFit, maxDiff: maxDiff, visibleArea: visibleArea };
   if (document.body) prepareIntro();
   else document.addEventListener("DOMContentLoaded", prepareIntro, { once: true });
 })();
