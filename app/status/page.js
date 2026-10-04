@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react";
 import { CHECKLIST_SIZE, getCompletion, getMissed } from "@/lib/projects";
 import { pageMetadata } from "@/lib/site";
-import IntroSettingForm from "@/components/IntroSettingForm";
+import IntroSettingSection from "@/components/IntroSettingSection";
 import { getIntroMode } from "@/lib/intro-setting";
 
 export const metadata = pageMetadata({
@@ -151,14 +151,8 @@ export default async function StatusPage() {
         </section>
       </div>
 
-      {/* 첫 방문 인트로: 종류를 골라 관리 비밀번호와 함께 저장 (app/api/intro/route.js). 미리보기는 새 탭 */}
-      <section className="card mt-card max-w-[720px]" aria-labelledby="intro-setting-title">
-        <h2 id="intro-setting-title" className="label">첫 방문 인트로</h2>
-        <p className="mt-1 text-caption text-muted">
-          첫 화면(/)에 처음 들어온 방문자에게 보여 줄 연출. 저장에는 관리 비밀번호가 필요해요.
-        </p>
-        <IntroSettingForm current={introMode} />
-      </section>
+      {/* 첫 방문 인트로: 종류를 골라 관리 비밀번호와 함께 저장 (components/IntroSettingSection.js) */}
+      <IntroSettingSection current={introMode} />
     </div>
   );
 }

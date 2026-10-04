@@ -43,7 +43,7 @@ const pages = (list) => [...new Set(list.map(([, file]) => file))].join(", ");
 console.log(
   `[fonts] 검사: 미리 만든 페이지 ${files.length}개 · 부분 글꼴에 없는 글자 ${missing.size}종` +
     (restOnly.length
-      ? ` (그중 한글 ${restOnly.length}자는 빌드 때 받아온 데이터 — 예: 커밋 메시지 — 로 "Pretendard Rest" 조각이 표시: ${pages(restOnly)})`
+      ? ` (그중 한글 ${restOnly.length}자는 빌드 때 받아온 데이터 — 예: 커밋 메시지 — 나 관리 화면 전용 글자(scripts/font-charset.mjs 의 ADMIN_ONLY)라 "Pretendard Rest" 조각이 표시: ${pages(restOnly)})`
       : "")
 );
 if (uncovered.length) {
