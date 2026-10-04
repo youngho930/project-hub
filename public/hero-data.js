@@ -214,45 +214,65 @@
     g.textBaseline = "alphabetic";
     g.fillStyle = "#fff";
     fillText(g, item.text, pad, pad + asc, f.ls);
-    var data = g.getImageData(0, 0, c.width, c.height).data;
+    var picked = pickPoints(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height, step);
     var pts = [];
-    for (var y = step / 2; y < c.height; y += step) {
-      for (var x = step / 2; x < c.width; x += step) {
-        if (data[(Math.floor(y) * c.width + Math.floor(x)) * 4 + 3] > 120) {
-          pts.push(item.x - pad + x, item.baseline - asc - pad + y);
-        }
-      }
-    }
+    for (var i = 0; i < picked.length; i += 2) pts.push(item.x - pad + picked[i], item.baseline - asc - pad + picked[i + 1]);
     c.width = c.height = 0;
     return pts;
   }
 
-  // 완성 글자(금색 그라데이션)와 빛 번짐을 미리 그려 둠 — 실제 카드 숫자와 같은 글꼴·위치·색
-  function makeTextSprite(item, dpr, glow) {
-    var f = item.font, pad = glow ? Math.ceil(f.size * 0.6) : 4;
+  // 글자 점 고르기 (읽은 픽셀 → 격자 점): 격자 점의 투명도가 넉넉한 기준(150) 이상이고, 상하좌우 4칸 중 2칸 이상도
+  // 칠해져(100 이상) 있어야 글자 점. 사파리의 캔버스 추적 방지가 읽은 값에 작은 잡음을 섞어도 빈 곳에 점이 생기거나
+  // 획 가장자리에 외톨이 점이 생기지 않음
+  function pickPoints(data, cw, ch, step) {
+    var out = [];
+    function a(x, y) {
+      return x < 0 || y < 0 || x >= cw || y >= ch ? 0 : data[(y * cw + x) * 4 + 3];
+    }
+    for (var y = step / 2; y < ch; y += step) {
+      for (var x = step / 2; x < cw; x += step) {
+        var ix = Math.floor(x), iy = Math.floor(y);
+        if (a(ix, iy) < 150) continue;
+        var n = (a(ix - 1, iy) >= 100) + (a(ix + 1, iy) >= 100) + (a(ix, iy - 1) >= 100) + (a(ix, iy + 1) >= 100);
+        if (n >= 2) out.push(x, y);
+      }
+    }
+    return out;
+  }
+
+  // 매 프레임 화면에 옮겨 그리는 그림은 일반(GPU) 캔버스로: CPU 캔버스(willReadFrequently)에 한 번 그린 뒤 픽셀만 옮겨 담음.
+  // 글자를 GPU 캔버스에 직접 그리면 가끔 획이 뭉개지고("8배" 가 "3배" 처럼), CPU 캔버스를 매 프레임 그대로 옮겨 그리면
+  // 사파리에서 느려짐(마지막 구간 멈춤) — 그리기와 옮기기를 나눠 둘 다 피함
+  function toGpu(src) {
+    var c = document.createElement("canvas");
+    c.width = src.width;
+    c.height = src.height;
+    c.getContext("2d").drawImage(src, 0, 0);
+    src.width = src.height = 0;
+    return c;
+  }
+
+  // 완성 순간의 빛 번짐을 미리 그려 둠 (완성된 금색 숫자 자체는 HTML 글자로 보여 줌 — run() 의 numEls)
+  function makeGlowSprite(item, dpr) {
+    var f = item.font, pad = Math.ceil(f.size * 0.6);
     var bx = item.box;
     var c = document.createElement("canvas");
     c.width = Math.ceil((bx.w + pad * 2) * dpr);
     c.height = Math.ceil((bx.h + pad * 2) * dpr);
-    // CPU 로 그리는 캔버스: 한 번만 그리는 그림이라 느리지 않고, GPU 캔버스에서 가끔 글자 획이 뭉개지던 일을 피함
-    var g = c.getContext("2d", { willReadFrequently: true });
+    var g = c.getContext("2d", { willReadFrequently: true }); // 글자는 CPU 캔버스에 그리고 toGpu 로 옮김
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.translate(pad - bx.x, pad - bx.y);
     g.font = f.css;
     g.textBaseline = "alphabetic";
-    if (glow) {
-      g.shadowColor = rgba(GOLD_LO, 0.9);
-      g.shadowBlur = f.size * 0.45;
-      g.fillStyle = rgba(GOLD_HI, 0.9);
-      fillText(g, item.text, item.x, item.baseline, f.ls);
-      g.shadowBlur = f.size * 0.18;
-      g.shadowColor = "rgba(255,248,220,1)";
-      g.fillStyle = "rgba(255,250,235,1)";
-    } else {
-      g.fillStyle = brGradient(g, bx.x, bx.y, bx.w, bx.h);
-    }
+    g.shadowColor = rgba(GOLD_LO, 0.9);
+    g.shadowBlur = f.size * 0.45;
+    g.fillStyle = rgba(GOLD_HI, 0.9);
     fillText(g, item.text, item.x, item.baseline, f.ls);
-    return { img: c, x: bx.x - pad, y: bx.y - pad, w: c.width / dpr, h: c.height / dpr };
+    g.shadowBlur = f.size * 0.18;
+    g.shadowColor = "rgba(255,248,220,1)";
+    g.fillStyle = "rgba(255,250,235,1)";
+    fillText(g, item.text, item.x, item.baseline, f.ls);
+    return { img: toGpu(c), x: bx.x - pad, y: bx.y - pad, w: c.width / dpr, h: c.height / dpr };
   }
 
   function makeBackground(w, h) {
@@ -289,14 +309,14 @@
     var c = document.createElement("canvas");
     c.width = Math.ceil(w * dpr);
     c.height = Math.ceil(h * dpr);
-    var g = c.getContext("2d", { willReadFrequently: true }); // 한 번만 그리는 작은 그림은 CPU 캔버스로 (완성 글자 그림과 같은 이유)
+    var g = c.getContext("2d", { willReadFrequently: true }); // CPU 캔버스에 그리고 toGpu 로 옮김
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.strokeStyle = rgba(LILAC, 0.9);
     g.fillStyle = rgba(LILAC, 0.18);
     g.lineWidth = 1.2;
     g.lineJoin = g.lineCap = "round";
     paint(g);
-    return { img: c, w: w, h: h };
+    return { img: toGpu(c), w: w, h: h };
   }
   function makeShardSprites(dpr) {
     var NUMS = ["7", "12", "30", "8", "1.5", "42", "06", "3", "250", "9"];
@@ -363,6 +383,47 @@
       ctx.setTransform(B.dpr, 0, 0, B.dpr, 0, 0);
     }
     sizeCanvas();
+    // 화면 전체 바탕: 캔버스는 보이는 영역 크기로 그리지만, 사파리의 반투명 도구 막대 아래까지 덮도록 뒤에 큰 화면(100lvh) 크기 바탕을 둠
+    var backdrop = document.createElement("div");
+    backdrop.setAttribute("aria-hidden", "true");
+    backdrop.style.cssText = "position:fixed;left:0;right:0;top:0;height:calc(100vh + env(safe-area-inset-bottom,0px));height:calc(100lvh + env(safe-area-inset-bottom,0px));z-index:9999;pointer-events:none;opacity:0;" +
+      "background:radial-gradient(circle at 85% 10%,rgba(139,92,246,.26) 0,rgba(139,92,246,0) 65vmax),radial-gradient(circle at 10% 95%,rgba(245,158,11,.08) 0,rgba(245,158,11,0) 50vmax),rgb(13,11,26)";
+    document.body.insertBefore(backdrop, canvas);
+    // 완성된 금색 숫자는 HTML 글자로: 실제 카드 숫자의 계산된 스타일(글꼴·크기·자간·숫자 폭·그라데이션)을 그대로 써서 그 자리에 두고
+    // opacity·transform 으로만 보이고 움직임 → 완성·덮개 걷힘 구간에 캔버스로 글자를 그리지 않음
+    var numEls = [0, 1, 2].map(function () {
+      var e = document.createElement("span");
+      e.setAttribute("aria-hidden", "true");
+      e.style.cssText = "position:fixed;left:0;top:0;z-index:10000;pointer-events:none;white-space:nowrap;margin:0;padding:0;opacity:0;" +
+        "color:transparent;-webkit-background-clip:text;background-clip:text;will-change:opacity,transform";
+      return e;
+    });
+    var numA = -1, numY = -1;
+    function placeNumbers(st) {
+      var ref = statEls()[0], cs = ref ? getComputedStyle(ref) : null;
+      for (var k = 0; k < 3; k++) {
+        var it = st.items[k], e = numEls[k], es = e.style;
+        e.textContent = it.text;
+        es.left = it.box.x + "px";
+        es.top = it.box.y + "px";
+        es.width = it.box.w + "px";
+        es.height = it.box.h + "px";
+        es.font = it.font.css; // font 는 줄 높이·숫자 모양도 초기화하므로 그 뒤에 정함
+        es.lineHeight = it.box.h + "px";
+        es.letterSpacing = it.font.ls + "px";
+        es.fontVariantNumeric = cs ? cs.fontVariantNumeric : "tabular-nums";
+        es.backgroundImage = cs && cs.backgroundImage !== "none" ? cs.backgroundImage : "linear-gradient(to bottom right,rgb(253,230,138),rgb(245,158,11))";
+      }
+      numA = numY = -1;
+    }
+    // 캔버스·바탕의 투명도 (덮개 걷힘 구간은 다시 그리지 않고 이것만 바꿈)
+    var layerA = -1;
+    function setLayer(a) {
+      a = Math.round(a * 1000) / 1000;
+      if (a === layerA) return;
+      layerA = a;
+      canvas.style.opacity = backdrop.style.opacity = String(a);
+    }
 
     var bg = makeBackground(w, h);
     var sprites = makeShardSprites(B.dpr);
@@ -469,16 +530,16 @@
           st.sh[i] = 1;
         }
       }
-      st.text = items.map(function (it) { return makeTextSprite(it, B.dpr, false); });
-      st.glow = items.map(function (it) { return makeTextSprite(it, B.dpr, true); });
+      st.glow = items.map(function (it) { return makeGlowSprite(it, B.dpr); });
       return st;
     }
     function freeSet(st) {
-      if (st) st.text.concat(st.glow).forEach(function (x) { x.img.width = x.img.height = 0; });
+      if (st) st.glow.forEach(function (x) { x.img.width = x.img.height = 0; });
     }
     function chooseSet(st) {
       cur = st;
       mode = st.mode;
+      placeNumbers(st);
       // 걷히는 시각: 카드 자리 1.3~1.7, 가운데 1.46~1.74 (숫자가 먼저 사라진 뒤)
       revealAt = mode === "center" ? T_REVEAL + CENTER_EXIT + 0.02 : T_REVEAL;
       endAt = mode === "center" ? T_END + 0.04 : T_END;
@@ -555,10 +616,10 @@
           st.tx[i] += dx;
           st.ty[i] += dy;
         }
-        st.text[k].x += dx; st.text[k].y += dy;
         st.glow[k].x += dx; st.glow[k].y += dy;
         st.items[k] = mi[k];
       }
+      if (moved && st === cur) placeNumbers(st);
       return Math.round(moved);
     }
     function sameSize(a, b) {
@@ -636,6 +697,7 @@
       sizeCanvas();
       bg.width = bg.height = 0;
       bg = makeBackground(w, h);
+      stillDrawn = false;
       return true;
     }
     addEventListener("resize", onViewport);
@@ -669,19 +731,42 @@
     }
 
     var stats = { frames: 0, intervals: [], at: [], points: 0, reduced: false, maxGap: 0, stalls: 0, stallTotal: 0, mode: "", vis: { text: 0, bg: 1, x: 0, y: 0, h: 0 } };
+    // 구간별 시간 기록 (?intro&debug): 흩어짐 / 모임 / 완성·빛남 / 덮개 걷힘 — 프레임 간격과 자바스크립트 그리기 시간
+    var SEG_NAMES = ["흩어짐", "모임", "완성·빛남", "덮개 걷힘"];
+    var segs = SEG_NAMES.map(function (name) { return { name: name, n: 0, sum: 0, max: 0, dsum: 0, dmax: 0 }; });
+    function segOf(t) {
+      return t < T_GATHER ? 0 : t < T_FORM ? 1 : t < revealAt ? 2 : 3;
+    }
+    function segLines() {
+      return segs.filter(function (g) { return g.n; }).map(function (g) {
+        return g.name + " " + g.n + "장 · 간격 평균 " + Math.round(g.sum / g.n) + "/최대 " + Math.round(g.max) + "ms · 그리기 평균 " + (g.dsum / g.n).toFixed(1) + "/최대 " + g.dmax.toFixed(1) + "ms";
+      });
+    }
     window.__hubIntroStats = stats;
 
     // 한 프레임: t 초 장면
+    var stillDrawn = false;
     function draw(t) {
       var bgA = t < revealAt ? 1 : 1 - smooth(clamp01((t - revealAt) / (endAt - revealAt)));
+      // 덮개 걷힘 구간(점·조각·빛 번짐이 다 끝난 뒤): 캔버스엔 바탕 한 장만 남으므로 한 번만 그리고, 걷히는 건 CSS 투명도로만
+      if (ready && t >= revealAt) {
+        if (!stillDrawn) {
+          ctx.globalCompositeOperation = "source-over";
+          ctx.globalAlpha = 1;
+          ctx.clearRect(0, 0, w, h);
+          ctx.drawImage(bg, 0, 0, w, h);
+          stillDrawn = true;
+        }
+        if (begun) setLayer(bgA);
+        numbers(t, bgA);
+        return;
+      }
+      stillDrawn = false;
+      if (begun && layerA !== 1 && canvas.style.opacity !== "0") setLayer(1);
       ctx.globalCompositeOperation = "source-over";
       ctx.globalAlpha = 1;
       ctx.clearRect(0, 0, w, h);
-      if (bgA > 0) {
-        ctx.globalAlpha = bgA;
-        ctx.drawImage(bg, 0, 0, w, h);
-        ctx.globalAlpha = 1;
-      }
+      ctx.drawImage(bg, 0, 0, w, h);
       if (!ready) return;
 
       var snapK = clamp01((t - T_FORM) / 0.1); // 1.1~1.2 흐트러짐이 0 으로
@@ -758,40 +843,56 @@
         ctx.globalAlpha = 1;
       }
 
-      // 완성 순간 빛 번짐 (가산 혼합) → 완성 글자
-      // 카드 자리: 실제 카드 숫자와 같은 자리라 걷힌 뒤 살짝 늦게 사라짐.
-      // 가운데: 1.3 에 완성된 뒤 카드 쪽(아래)으로 22px 내려가며 사라짐 — 덮개가 걷히기 전에 다 사라져 페이지 글자 위에 남지 않음.
-      // 카드 맞춤 취소: 같은 방식으로 모인 자리에서 먼저 사라짐 (덮개가 걷히는 중에 취소되면 0.08초 만에)
-      var exiting = mode === "center" || !!aborted;
-      var exitK = exiting ? smooth(clamp01((t - (aborted ? aborted.start : T_REVEAL)) / (aborted ? aborted.dur : CENTER_EXIT))) : 0;
-      var textA = !exiting
-        ? (t < 1.6 ? crisp : crisp * (1 - clamp01((t - 1.6) / 0.1)))
-        : crisp * (1 - exitK);
-      var lift = exiting && !(aborted && aborted.late) ? 22 * exitK : 0;
+      // 완성 순간 빛 번짐 (가산 혼합, 미리 그린 그림 3장) — 1.3 이전에만
       if (flash > 0.01) {
+        var lift0 = exitLift(t);
         ctx.globalCompositeOperation = "lighter";
         ctx.globalAlpha = flash * 0.85;
         for (var gi = 0; gi < 3; gi++) {
           var gs = cur.glow[gi];
-          ctx.drawImage(gs.img, gs.x, gs.y + lift, gs.w, gs.h);
+          ctx.drawImage(gs.img, gs.x, gs.y + lift0, gs.w, gs.h);
         }
         ctx.globalCompositeOperation = "source-over";
       }
-      // 확인용 기록(값만 바꿈): 지금 그리는 숫자 자리·투명도와 덮개 투명도 — 측정 도구가 실제 카드 위치와 비교
+      ctx.globalAlpha = 1;
+      numbers(t, bgA);
+    }
+
+    // 완성된 금색 숫자(HTML 글자): 1.14~1.24 에 점 위로 나타남.
+    // 카드 자리: 실제 카드 숫자와 같은 자리라 걷힌 뒤 살짝 늦게 사라짐.
+    // 가운데: 1.3 에 완성된 뒤 카드 쪽(아래)으로 22px 내려가며 사라짐 — 덮개가 걷히기 전에 다 사라져 페이지 글자 위에 남지 않음.
+    // 카드 맞춤 취소: 같은 방식으로 모인 자리에서 먼저 사라짐 (덮개가 걷히는 중에 취소되면 그 자리에서 바로)
+    function exitK(t) {
+      var exiting = mode === "center" || !!aborted;
+      return exiting ? smooth(clamp01((t - (aborted ? aborted.start : T_REVEAL)) / (aborted ? aborted.dur : CENTER_EXIT))) : 0;
+    }
+    function exitLift(t) {
+      var exiting = mode === "center" || !!aborted;
+      return exiting && !(aborted && aborted.late) ? 22 * exitK(t) : 0;
+    }
+    function numbers(t, bgA) {
+      var crisp = clamp01((t - 1.14) / 0.1);
+      var exiting = mode === "center" || !!aborted;
+      var textA = !exiting ? (t < 1.6 ? crisp : crisp * (1 - clamp01((t - 1.6) / 0.1))) : crisp * (1 - exitK(t));
+      var lift = exitLift(t);
+      textA = Math.round(textA * 100) / 100;
+      lift = Math.round(lift * 10) / 10;
+      if (textA !== numA || lift !== numY) {
+        // 바뀔 때만 style 을 씀 (opacity·transform → 합성 단계에서 처리)
+        for (var k = 0; k < 3; k++) {
+          numEls[k].style.opacity = String(textA);
+          numEls[k].style.transform = lift ? "translate3d(0," + lift + "px,0)" : "none";
+        }
+        numA = textA;
+        numY = lift;
+      }
+      // 확인용 기록(값만 바꿈): 지금 보이는 숫자 자리·투명도와 덮개 투명도 — 측정 도구가 실제 카드 위치와 비교
       var vis = stats.vis;
       vis.text = textA;
       vis.bg = bgA;
       vis.x = cur.items[0].box.x;
       vis.y = cur.items[0].box.y + lift;
       vis.h = h;
-      if (textA > 0.01) {
-        ctx.globalAlpha = textA;
-        for (var ti = 0; ti < 3; ti++) {
-          var ts = cur.text[ti];
-          ctx.drawImage(ts.img, ts.x, ts.y + lift, ts.w, ts.h);
-        }
-      }
-      ctx.globalAlpha = 1;
     }
 
     var start = performance.now(), last = start, frame = 0, done = false, begun = false;
@@ -815,6 +916,10 @@
         logEvent("캔버스가 바깥에서 지워져 다시 붙임");
         document.body.appendChild(canvas);
       }
+      if (document.body) {
+        if (!backdrop.isConnected) document.body.insertBefore(backdrop, canvas);
+        for (var ne = 0; ne < 3; ne++) if (ready && !numEls[ne].isConnected) document.body.appendChild(numEls[ne]);
+      }
       if (opts.keepClasses) opts.keepClasses();
       // 한 번에 0.2초 넘게 멈췄으면 그동안은 시간이 멈춘 것으로 봄 (합쳐서 1.2초까지) — 워프와 같은 보정
       var gap = now - last;
@@ -824,7 +929,7 @@
         start += hold;
         stats.stallTotal += hold;
         stats.stalls++;
-        logEvent(Math.round(gap) + "ms 멈춤 → 장면 건너뛰지 않게 보정");
+        if (stats.stalls <= 2) logEvent(Math.round(gap) + "ms 멈춤 → 장면 건너뛰지 않게 보정"); // 기록 칸을 아껴 처음 두 번만 (횟수는 끝난 이유에)
       }
       var t = (now - start) / 1000;
       if (stats.frames > 0) {
@@ -862,8 +967,17 @@
         return;
       }
       if (t >= endAt + 0.02) { finish(); return; }
+      var d0 = performance.now();
       cues(t);
       draw(t);
+      if (stats.frames > 1) {
+        var sg = segs[segOf(t)], iv = stats.intervals[stats.intervals.length - 1], dd = performance.now() - d0;
+        sg.n++;
+        sg.sum += iv;
+        sg.max = Math.max(sg.max, iv);
+        sg.dsum += dd;
+        sg.dmax = Math.max(sg.dmax, dd);
+      }
       frame = requestAnimationFrame(tick);
     }
     function finish() {
@@ -871,6 +985,10 @@
       done = true;
       cancelAnimationFrame(frame);
       canvas.remove();
+      backdrop.remove();
+      numEls.forEach(function (e) { e.remove(); });
+      stats.seg = segs;
+      if (window.__hubIntroLog && stats.frames > 1) window.__hubIntroLog.seg = segLines();
       removeEventListener("resize", onViewport);
       if (ro) ro.disconnect();
       if (window.visualViewport) visualViewport.removeEventListener("resize", onViewport);
@@ -921,11 +1039,12 @@
       // 준비 비용이 움직이기 전에 생기게. 그다음 첫 장면을 그리고 캔버스를 보이며 CSS 덮개를 걷음 —
       // 덮개 걷기(<html> 클래스 변경)를 연출 도중에 하지 않아 그 순간의 프레임 밀림이 없음
       ctx.globalAlpha = 0.004;
-      var warmList = sprites.digits.concat(sprites.cells, sprites.checks, sprites.bars, setC.text, setC.glow, setM ? setM.text.concat(setM.glow) : []);
+      var warmList = sprites.digits.concat(sprites.cells, sprites.checks, sprites.bars, setC.glow, setM ? setM.glow : []);
+      for (var nk = 0; nk < 3; nk++) document.body.appendChild(numEls[nk]);
       for (var wi = 0; wi < warmList.length; wi++) ctx.drawImage(warmList[wi].img, 0, 0);
       ctx.globalAlpha = 1;
       draw(0);
-      canvas.style.opacity = "1";
+      setLayer(1);
       if (opts.onBegin) opts.onBegin();
       // 화면 전환(캔버스 보이기·덮개 걷기)을 화면에 반영하는 몇 프레임이 무거우므로, 프레임 간격이 두 번 연속
       // 24ms 안으로 안정되면(최대 8프레임) 시계를 시작 (그동안은 첫 장면이 그대로 보임) → 움직이는 첫 프레임이 밀리지 않음
@@ -1047,7 +1166,7 @@
   }
 
   // 판정 함수는 자동 테스트(tests/)에서도 씀
-  window.HubDataIntro = { version: 2, cardsFit: cardsFit, maxDiff: maxDiff, visibleArea: visibleArea };
+  window.HubDataIntro = { version: 3, cardsFit: cardsFit, maxDiff: maxDiff, visibleArea: visibleArea, pickPoints: pickPoints };
   if (document.body) prepareIntro();
   else document.addEventListener("DOMContentLoaded", prepareIntro, { once: true });
 })();

@@ -66,7 +66,7 @@ test("숫자 자리는 모이기 직전(0.36초)·완성 직전(1.25초)·페이
   // 맞춤 취소: 걷히기 전이면 숫자가 먼저 사라진 뒤 덮개가 걷히고, 걷히는 중이면 움직이지 않고 바로 감춤
   assert.match(SRC, /revealAt = startAt \+ dur \+ 0\.02;/);
   assert.match(SRC, /dur = late \? 0\.001 : CENTER_EXIT/);
-  assert.match(SRC, /var lift = exiting && !\(aborted && aborted\.late\) \? 22 \* exitK : 0;/);
+  assert.match(SRC, /return exiting && !\(aborted && aborted\.late\) \? 22 \* exitK\(t\) : 0;/);
 });
 
 test("글꼴 준비를 기다리고(document.fonts.ready, 최대 0.5초), 사이트 글꼴(목록 첫 번째)만 확인", () => {
@@ -82,4 +82,61 @@ test("?intro&debug 기록: 맞춤 방식, 처음↔마지막 위치 차이, 연�
   assert.match(SRC, /처음↔마지막 위치 차이 /);
   assert.match(SRC, /화면 높이 " \+ \(a\.vh \|\| \[\]\)\.join\("→"\)/);
   assert.match(SRC, /logEvent\("화면 높이 " \+ h \+ "→" \+ nh \+ "px"\)/);
+});
+
+/* ===== 사파리 마지막 구간 멈춤·아래 잘림 ===== */
+test("글자 점 고르기: 읽은 픽셀에 잡음이 섞여도 빈 곳에 점이 생기지 않고 획 안은 그대로", () => {
+  const H = load();
+  const cw = 40, ch = 20, data = new Uint8ClampedArray(cw * ch * 4);
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+  for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+    const inside = x >= 10 && x < 30 && y >= 5 && y < 15; // 가운데 직사각형 = 글자 획
+    const noise = Math.round((rnd() - 0.5) * 60); // ±30 잡음 (추적 방지가 섞는 잡음보다 넉넉히 큼)
+    data[(y * cw + x) * 4 + 3] = Math.max(0, Math.min(255, (inside ? 255 : 0) + noise));
+  }
+  // 빈 곳 몇 칸을 외톨이로 밝게 (잡음 튐)
+  for (const [x, y] of [[3, 3], [36, 17], [5, 16]]) data[(y * cw + x) * 4 + 3] = 200;
+  const pts = H.pickPoints(data, cw, ch, 2);
+  assert.ok(pts.length / 2 >= 40, "획 안의 점이 충분함: " + pts.length / 2);
+  for (let i = 0; i < pts.length; i += 2) {
+    const x = pts[i], y = pts[i + 1];
+    assert.ok(x >= 9 && x <= 31 && y >= 4 && y <= 16, `빈 곳에 점: ${x},${y}`);
+  }
+});
+
+test("매 프레임 그리는 그림은 GPU 캔버스로 옮겨 쓰고, CPU 캔버스는 한 번 그리거나 읽는 데만", () => {
+  assert.equal((SRC.match(/willReadFrequently: true/g) || []).length, 3, "글자 점 읽기·빛 번짐·조각 그림 세 곳만");
+  assert.match(SRC, /function toGpu\(src\)/);
+  assert.match(SRC, /return \{ img: toGpu\(c\), x: bx\.x - pad/, "빛 번짐은 GPU 로 옮김");
+  assert.match(SRC, /return \{ img: toGpu\(c\), w: w, h: h \};/, "업무 조각은 GPU 로 옮김");
+  assert.ok(!/makeTextSprite|cur\.text\[/.test(SRC), "완성 글자를 캔버스로 그리지 않음");
+});
+
+test("완성된 숫자는 실제 카드와 같은 계산된 스타일의 HTML 글자로, opacity·transform 으로만 움직임", () => {
+  assert.match(SRC, /es\.backgroundImage = cs && cs\.backgroundImage !== "none" \? cs\.backgroundImage/);
+  assert.match(SRC, /es\.fontVariantNumeric = cs \? cs\.fontVariantNumeric/);
+  assert.match(SRC, /numEls\[k\]\.style\.opacity = String\(textA\)/);
+  assert.match(SRC, /numEls\[k\]\.style\.transform = lift \? "translate3d\(0," \+ lift \+ "px,0\)" : "none"/);
+});
+
+test("덮개 걷힘 구간은 캔버스를 다시 그리지 않고 투명도만 바꿈", () => {
+  assert.match(SRC, /if \(ready && t >= revealAt\) \{\s*if \(!stillDrawn\) \{/);
+  assert.match(SRC, /if \(begun\) setLayer\(bgA\);/);
+  assert.match(SRC, /canvas\.style\.opacity = backdrop\.style\.opacity = String\(a\)/);
+});
+
+test("덮개 바탕은 사파리 도구 막대 아래까지(100lvh) 덮음", () => {
+  assert.match(SRC, /height:calc\(100lvh \+ env\(safe-area-inset-bottom,0px\)\)/);
+  const css = fs.readFileSync(path.join(ROOT, "app/globals.css"), "utf8");
+  assert.match(css, /html\.hub-data\.hub-cover body::before \{\s*bottom: auto;\s*height: calc\(100vh \+ env\(safe-area-inset-bottom, 0px\)\);\s*height: calc\(100lvh \+ env\(safe-area-inset-bottom, 0px\)\);/);
+});
+
+test("?intro&debug 에 구간별(흩어짐/모임/완성·빛남/덮개 걷힘) 프레임 간격·그리기 시간", () => {
+  assert.match(SRC, /var SEG_NAMES = \["흩어짐", "모임", "완성·빛남", "덮개 걷힘"\];/);
+  assert.match(SRC, /간격 평균 " \+ Math\.round\(g\.sum \/ g\.n\) \+ "\/최대 "/);
+  assert.match(SRC, /그리기 평균 "/);
+  assert.match(SRC, /window\.__hubIntroLog\.seg = segLines\(\)/);
+  const arrival = fs.readFileSync(path.join(ROOT, "lib/arrival-script.js"), "utf8");
+  assert.ok(arrival.includes(String.raw`(L.seg?"\\n"+L.seg.join("\\n"):"")`), "debug 표시에 구간 기록");
 });

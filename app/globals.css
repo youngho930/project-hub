@@ -216,6 +216,16 @@ html.hub-data.hub-cover::before {
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='430' height='370'%3E%3Cg fill='rgb(196,181,253)'%3E%3Ccircle cx='401' cy='164' r='1.1' opacity='0.55'/%3E%3Ccircle cx='236' cy='189' r='1.1' opacity='0.35'/%3E%3Ccircle cx='410' cy='96' r='1.3' opacity='0.35'/%3E%3Ccircle cx='45' cy='298' r='1.1' opacity='0.55'/%3E%3Ccircle cx='257' cy='179' r='1.3' opacity='0.45'/%3E%3Ccircle cx='151' cy='315' r='0.9' opacity='0.35'/%3E%3Ccircle cx='266' cy='218' r='0.9' opacity='0.45'/%3E%3Ccircle cx='81' cy='254' r='1.1' opacity='0.35'/%3E%3C/g%3E%3Cg fill='none' stroke='rgb(196,181,253)' stroke-width='1' opacity='.38'%3E%3Crect x='348.5' y='45.5' width='15' height='8'/%3E%3Cpath d='M355.5 45.5v8'/%3E%3Crect x='166.5' y='180.5' width='15' height='7'/%3E%3Cpath d='M173.5 180.5v7'/%3E%3C/g%3E%3Cg fill='rgb(196,181,253)' opacity='.36' font-family='ui-monospace,Menlo,Consolas,monospace' font-size='9' font-weight='600'%3E%3Ctext x='310' y='268'%3E9%3C/text%3E%3Ctext x='414' y='247'%3E1%3C/text%3E%3C/g%3E%3Cg fill='rgb(253,230,138)' opacity='.5'%3E%3Ccircle cx='51' cy='142' r='1'/%3E%3Ccircle cx='246' cy='360' r='1'/%3E%3C/g%3E%3C/svg%3E") 157px 91px / 430px 370px;
   animation: hub-data-drift 2.4s ease-in-out infinite alternate;
 }
+/* data 덮개는 화면 전체(사파리의 반투명 도구 막대 아래 포함)를 덮음: inset:0 은 도구 막대 위까지만 덮어 아래 카드가 비침 */
+html.hub-data.hub-cover body::before {
+  bottom: auto;
+  height: calc(100vh + env(safe-area-inset-bottom, 0px));
+  height: calc(100lvh + env(safe-area-inset-bottom, 0px));
+}
+html.hub-data.hub-cover::before {
+  height: calc(100vh + 80px);
+  height: calc(100lvh + 80px);
+}
 /* 캔버스가 이어받은 뒤(hub-cover-off)에는 위 규칙보다 우선해 멈추고 투명하게 */
 html.hub-data.hub-cover-off::before {
   animation: none;
