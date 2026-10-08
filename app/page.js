@@ -19,7 +19,7 @@ import { getIntroMode } from "@/lib/intro-setting";
 import { getCardPreview } from "@/lib/previews";
 import { getProfile } from "@/lib/profile";
 import { ideaSuffix } from "@/lib/project-count";
-import { NEEDS_CHECK, PROJECT_STATUS, getAllProjects } from "@/lib/projects";
+import { NEEDS_CHECK, PROJECT_STATUS, getAllProjects, mainEffect } from "@/lib/projects";
 
 // 프로젝트 종류(그룹)별 색: 썸네일이 없을 때 배경, 마우스를 올렸을 때 빛 번짐
 const GROUP_COLOR = {
@@ -57,16 +57,6 @@ function SectionHead({ label, title, aside, id }) {
       {aside}
     </div>
   );
-}
-
-// 대표 효과 한 줄: 첫 번째 결과 (전·후가 있으면 화살표로)
-function mainEffect(project) {
-  const result = project.results?.[0];
-  if (!result) return null;
-  return {
-    label: result.label,
-    text: result.before ? `${result.before} → ${result.after}` : result.after,
-  };
 }
 
 // 넓은 화면에서 두 칸을 차지하는 대표작. 값은 두 칸이 되기 시작하는 화면 크기. (쇼케이스 6개 기준)

@@ -19,7 +19,11 @@ const GROUPS = [
 // 종류별로 어떤 글자를 제목(강조)·보조 설명으로 쓰는지
 const FIELDS = {
   pages: (item) => ({ title: item.title, sub: item.hint, extra: [item.keywords] }),
-  projects: (item) => ({ title: item.title, sub: item.summary, extra: [item.group, item.status] }),
+  projects: (item) => ({
+    title: item.title,
+    sub: item.summary,
+    extra: [item.group, item.status, item.effect && `${item.effect.label} ${item.effect.text}`],
+  }),
   tech: (item) => ({ title: item.title, sub: item.projects.join(" · "), extra: [] }),
   decisions: (item) => ({ title: item.title, sub: item.why, extra: [item.project] }),
 };
@@ -101,6 +105,12 @@ function ResultRow({ result, active, id, onPick, onHover }) {
           <p className="mt-0.5 line-clamp-1 text-caption text-muted">
             {kind === "tech" && <span className="text-muted/80">사용 · </span>}
             <Highlight text={sub.text} match={sub.match} />
+          </p>
+        )}
+        {kind === "projects" && item.effect && (
+          <p className="mt-0.5 flex items-baseline gap-1.5 text-caption">
+            <span className="shrink-0 text-muted">{item.effect.label}</span>
+            <span className="font-semibold text-accent">{item.effect.text}</span>
           </p>
         )}
       </div>

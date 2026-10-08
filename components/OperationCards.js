@@ -54,14 +54,24 @@ function OperationCard({ label, total, caption, error, children }) {
 export function BoardCard({ calendar }) {
   const items = BOARD.map((item) => ({ ...item, count: calendar.counts[item.key] }));
   const sum = items.reduce((total, item) => total + item.count, 0);
+  // 연결됐는데 30일 안 일정이 하나도 없으면 빈 막대와 큰 "0" 대신 Job collector 처럼 "—" 와 한 줄 안내
+  // (멈춘 것처럼 보이지 않게). 연결 전·실패일 때는 "없다"고 말할 수 없으니 그대로 둔다.
+  const empty = calendar.status === CALENDAR_STATUS.connected && sum === 0;
   return (
     <OperationCard
       label="Calendar"
-      total={<span className="text-title font-bold tabular-nums">{sum}</span>}
+      total={<span className="text-title font-bold tabular-nums">{empty ? "—" : sum}</span>}
       caption={BOARD_CAPTION[calendar.status]}
       error={calendar.status === CALENDAR_STATUS.error}
     >
-      <BarList items={items} />
+      {empty ? (
+        <p className="flex items-center gap-3 text-body text-muted">
+          <CalendarDays size={14} className="shrink-0" />
+          예정된 일정이 없어요
+        </p>
+      ) : (
+        <BarList items={items} />
+      )}
     </OperationCard>
   );
 }
