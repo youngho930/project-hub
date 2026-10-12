@@ -68,24 +68,40 @@ function chime() {
     });
   } catch (e) {}
 }
-function finish() {
-  clearInterval(tick); tick = null; endAt = null; chime();
+// Notion reloads the widget whenever the page is reopened, so the timer keeps its state in localStorage.
+const SKEY = "focus-timer-state";
+const save = () => store(SKEY, JSON.stringify({ mode, left, endAt }));
+function showMode() {
+  document.body.classList.toggle("break", mode === "break");
+  document.getElementById("label").textContent = mode === "focus" ? "집중" : "휴식";
+  document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+}
+function finish(quiet) {
+  clearInterval(tick); tick = null; endAt = null;
+  if (!quiet) chime();
   if (mode === "focus") { count++; store(key, String(count)); showCount(); }
   setMode(mode === "focus" ? "break" : "focus");
-  document.body.classList.remove("done"); void document.body.offsetWidth; document.body.classList.add("done");
+  if (!quiet) { document.body.classList.remove("done"); void document.body.offsetWidth; document.body.classList.add("done"); }
 }
 function setMode(m) {
   mode = m; left = LEN[m]; endAt = null; clearInterval(tick); tick = null; go.textContent = "시작";
-  document.body.classList.toggle("break", m === "break");
-  document.getElementById("label").textContent = m === "focus" ? "집중" : "휴식";
-  document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
-  draw();
+  showMode(); save(); draw();
 }
 go.onclick = () => {
-  if (endAt) { left = remaining(); endAt = null; clearInterval(tick); tick = null; go.textContent = "계속"; draw(); return; }
-  endAt = Date.now() + left * 1000; go.textContent = "멈춤"; tick = setInterval(draw, 250); draw();
+  if (endAt) { left = remaining(); endAt = null; clearInterval(tick); tick = null; go.textContent = "계속"; save(); draw(); return; }
+  endAt = Date.now() + left * 1000; go.textContent = "멈춤"; tick = setInterval(draw, 250); save(); draw();
 };
 document.getElementById("reset").onclick = () => setMode(mode);
 document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => setMode(b.dataset.mode));
-draw();
+(function restore() {
+  let s = null;
+  try { s = JSON.parse(store(SKEY) || "null"); } catch (e) {}
+  if (!s || !LEN[s.mode]) { showMode(); draw(); return; }
+  mode = s.mode; left = Math.min(Number(s.left) || LEN[mode], LEN[mode]); endAt = s.endAt || null;
+  showMode();
+  if (endAt && endAt <= Date.now()) { finish(true); return; }   // ended while the page was closed
+  if (endAt) { go.textContent = "멈춤"; tick = setInterval(draw, 250); }
+  else if (left < LEN[mode]) go.textContent = "계속";
+  draw();
+})();
 </script></body></html>
