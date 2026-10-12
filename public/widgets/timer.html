@@ -1,156 +1,91 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Focus Timer</title>
-<style>:root{--panel:#12142b;--edge:#2c2f5c;--edge2:#1b1e3e;--tile:#1f2246;--tile2:#262a55;--text:#ece9ff;--dim:#8c89b8;--yellow:#ffd56b;--lav:#b8a9ff;--cyan:#7fe3ff;--pink:#ff7aa2}
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--panel);color:var(--text);font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
-.panel{position:absolute;inset:0;background:var(--panel);box-shadow:inset 0 0 0 2px var(--edge),inset 0 0 0 4px var(--edge2);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;gap:10px}
-.label{font-size:12px;letter-spacing:.08em;color:var(--dim)}
-button{font:inherit;font-size:13px;color:var(--text);background:var(--tile);border:0;padding:7px 12px;cursor:pointer;box-shadow:inset 0 0 0 2px #3a3e72,inset -2px -3px 0 2px #15183a;border-radius:0}
-button:hover{background:var(--tile2)}
-button.on{background:var(--lav);color:#15183a;box-shadow:inset 0 0 0 2px #d9d0ff,inset -2px -3px 0 2px #8f80d9}
-button:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
-
-.row{display:flex;gap:8px}
-.bar{display:grid;grid-template-columns:repeat(20,1fr);gap:2px;width:min(260px,90%)}
-.bar i{height:8px;background:#1f2246}
-.bar i.on{background:var(--yellow)}
-.panel.break .bar i.on{background:var(--cyan)}
-.count{font-size:12px;color:var(--dim)}
-.count b{color:var(--yellow)}
-.panel.done{animation:flash .5s steps(2) 6}
-@keyframes flash{50%{background:#2a2d55}}
-canvas{display:block}
+<title>Focus timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600&family=IBM+Plex+Sans+KR:wght@400;500&display=swap">
+<style>
+:root{--page:#191919;--ink:#ede9f7;--muted:#8f8ba8;--lamp:#f2c66d;--river:#8db4f0;--track:#2b2938;--u:min(1.05vw,1.5vh)}
+html,body{margin:0;height:100%;background:var(--page);color:var(--ink);overflow:hidden}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*3);font-family:"IBM Plex Sans KR",system-ui,sans-serif}
+.modes{display:flex;gap:calc(var(--u)*4)}
+.modes button{all:unset;cursor:pointer;font-size:calc(var(--u)*3.8);color:var(--muted);padding-bottom:calc(var(--u)*.8);border-bottom:2px solid transparent}
+.modes button[aria-pressed="true"]{color:var(--ink);border-color:var(--lamp)}
+body.break .modes button[aria-pressed="true"]{border-color:var(--river)}
+.ring{position:relative;width:calc(var(--u)*36);height:calc(var(--u)*36)}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:3.2}
+.ring .track{stroke:var(--track)}
+.ring .bar{stroke:var(--lamp);stroke-linecap:round;transition:stroke-dashoffset .4s linear}
+body.break .ring .bar{stroke:var(--river)}
+.time{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.time b{font:600 calc(var(--u)*11.5)/1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.time small{font-size:calc(var(--u)*3.2);color:var(--muted);margin-top:calc(var(--u)*.6)}
+.actions{display:flex;gap:calc(var(--u)*2)}
+.actions button{all:unset;cursor:pointer;font-size:calc(var(--u)*3.8);font-weight:500;padding:calc(var(--u)*1.6) calc(var(--u)*4.4);border-radius:999px}
+#go{background:var(--lamp);color:#1d1a12}
+body.break #go{background:var(--river);color:#121826}
+#reset{color:var(--muted);box-shadow:inset 0 0 0 1px #3a3748}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.count{font-size:calc(var(--u)*3.4);color:var(--muted)}
+body.done .ring{animation:pulse 1.2s ease-out 2}
+@keyframes pulse{50%{transform:scale(1.04)}}
+@media (prefers-reduced-motion:reduce){body.done .ring{animation:none}.ring .bar{transition:none}}
 </style></head>
-<body><div class="panel" id="panel">
-  <div class="row" role="group" aria-label="모드">
-    <button data-mode="focus" class="on">집중 25분</button><button data-mode="break">휴식 5분</button>
-  </div>
-  <canvas id="t" aria-live="polite"></canvas>
-  <div class="bar" id="bar"></div>
-  <div class="row"><button id="go">시작</button><button id="reset">초기화</button></div>
-  <div class="count">오늘 집중 <b id="n">0</b>회</div>
+<body>
+<div class="modes" role="group" aria-label="모드">
+  <button data-mode="focus" aria-pressed="true">집중 25분</button><button data-mode="break" aria-pressed="false">휴식 5분</button>
 </div>
+<div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="bar" id="bar" cx="50" cy="50" r="46"/></svg>
+  <div class="time" aria-live="polite"><b id="t">25:00</b><small id="label">집중</small></div></div>
+<div class="actions"><button id="go">시작</button><button id="reset">초기화</button></div>
+<div class="count" id="count"></div>
 <script>
-// Shared pixel-font helpers (5x7 bitmap font) for the Notion home widgets.
-const GLYPHS = {
-  "0": ["01110","10001","10011","10101","11001","10001","01110"],
-  "1": ["00100","01100","00100","00100","00100","00100","01110"],
-  "2": ["01110","10001","00001","00010","00100","01000","11111"],
-  "3": ["11110","00001","00001","01110","00001","00001","11110"],
-  "4": ["00010","00110","01010","10010","11111","00010","00010"],
-  "5": ["11111","10000","11110","00001","00001","10001","01110"],
-  "6": ["00110","01000","10000","11110","10001","10001","01110"],
-  "7": ["11111","00001","00010","00100","01000","01000","01000"],
-  "8": ["01110","10001","10001","01110","10001","10001","01110"],
-  "9": ["01110","10001","10001","01111","00001","00010","01100"],
-  "A": ["01110","10001","10001","11111","10001","10001","10001"],
-  "C": ["01110","10001","10000","10000","10000","10001","01110"],
-  "D": ["11110","10001","10001","10001","10001","10001","11110"],
-  "E": ["11111","10000","10000","11110","10000","10000","11111"],
-  "F": ["11111","10000","10000","11110","10000","10000","10000"],
-  "H": ["10001","10001","10001","11111","10001","10001","10001"],
-  "I": ["01110","00100","00100","00100","00100","00100","01110"],
-  "M": ["10001","11011","10101","10101","10001","10001","10001"],
-  "N": ["10001","11001","10101","10011","10001","10001","10001"],
-  "O": ["01110","10001","10001","10001","10001","10001","01110"],
-  "R": ["11110","10001","10001","11110","10100","10010","10001"],
-  "S": ["01111","10000","10000","01110","00001","00001","11110"],
-  "T": ["11111","00100","00100","00100","00100","00100","00100"],
-  "U": ["10001","10001","10001","10001","10001","10001","01110"],
-  "W": ["10001","10001","10001","10101","10101","10101","01010"],
-  ":": ["0","1","0","0","0","1","0"],
-  ".": ["0","0","0","0","0","0","1"],
-  "-": ["000","000","000","111","000","000","000"],
-  "/": ["001","001","010","010","010","100","100"],
-  "|": ["1","1","1","1","1","1","1"],
-  "°": ["010","101","010","000","000","000","000"],
-  " ": ["00","00","00","00","00","00","00"]
-};
-function glyph(ch) { return GLYPHS[ch] || GLYPHS[" "]; }
-function measure(text) {
-  let w = 0;
-  for (const ch of text) w += glyph(ch)[0].length + 1;
-  return Math.max(0, w - 1);
-}
-function drawText(ctx, text, x, y, s, color) {
-  ctx.fillStyle = color;
-  for (const ch of text) {
-    const g = glyph(ch);
-    for (let r = 0; r < 7; r++)
-      for (let c = 0; c < g[r].length; c++)
-        if (g[r][c] === "1") ctx.fillRect(x + c * s, y + r * s, s, s);
-    x += (g[0].length + 1) * s;
-  }
-}
-function fitCanvas(canvas, el) {
-  const dpr = window.devicePixelRatio || 1;
-  const w = Math.max(1, el.clientWidth), h = Math.max(1, el.clientHeight);
-  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-  canvas.style.width = w + "px"; canvas.style.height = h + "px";
-  const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.imageSmoothingEnabled = false;
-  return { ctx, w, h };
-}
-function store(key, val) {
-  try {
-    if (val === undefined) return window.localStorage.getItem(key);
-    window.localStorage.setItem(key, val);
-  } catch (e) { return null; }
-}
-
-const LEN = { focus: 25 * 60, break: 5 * 60 };
+const LEN = { focus: 25 * 60, break: 5 * 60 }, C = 2 * Math.PI * 46;
 let mode = "focus", left = LEN.focus, endAt = null, tick = null;
-const panel = document.getElementById("panel"), canvas = document.getElementById("t");
 const bar = document.getElementById("bar"), go = document.getElementById("go");
-for (let i = 0; i < 20; i++) bar.appendChild(document.createElement("i"));
-const now0 = new Date();
-const todayKey = "focus-" + now0.getFullYear() + "-" + (now0.getMonth() + 1) + "-" + now0.getDate();
-let count = Number(store(todayKey)) || 0;
-document.getElementById("n").textContent = count;
-
-function remaining() { return endAt ? Math.max(0, Math.round((endAt - Date.now()) / 1000)) : left; }
+bar.style.strokeDasharray = C;
+const d0 = new Date(), key = "focus-" + d0.getFullYear() + "-" + (d0.getMonth() + 1) + "-" + d0.getDate();
+const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+let count = Number(store(key)) || 0;
+const showCount = () => document.getElementById("count").textContent = count ? "오늘 " + count + "번 집중했어요" : "25분 집중하고 5분 쉬어요";
+showCount();
+const remaining = () => endAt ? Math.max(0, Math.round((endAt - Date.now()) / 1000)) : left;
 function draw() {
   const r = remaining();
-  const text = String(Math.floor(r / 60)).padStart(2, "0") + ":" + String(r % 60).padStart(2, "0");
-  const s = Math.max(3, Math.min(8, Math.floor((panel.clientWidth - 40) / measure(text))));
-  canvas.width = measure(text) * s; canvas.height = 7 * s;
-  drawText(canvas.getContext("2d"), text, 0, 0, s, mode === "focus" ? "#ffd56b" : "#7fe3ff");
-  const done = Math.round((1 - r / LEN[mode]) * 20);
-  [...bar.children].forEach((b, i) => b.classList.toggle("on", i < done));
+  document.getElementById("t").textContent = String(Math.floor(r / 60)).padStart(2, "0") + ":" + String(r % 60).padStart(2, "0");
+  bar.style.strokeDashoffset = C * (r / LEN[mode]);
   if (endAt && r === 0) finish();
 }
-function beep() {
+function chime() {
   try {
     const ac = new (window.AudioContext || window.webkitAudioContext)();
-    [0, 0.25, 0.5].forEach(t => {
+    [0, .18, .36].forEach((t, i) => {
       const o = ac.createOscillator(), g = ac.createGain();
-      o.type = "square"; o.frequency.value = 880; g.gain.value = 0.06;
-      o.connect(g); g.connect(ac.destination); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + 0.15);
+      o.type = "sine"; o.frequency.value = [660, 880, 990][i];
+      g.gain.setValueAtTime(.0001, ac.currentTime + t); g.gain.exponentialRampToValueAtTime(.12, ac.currentTime + t + .02); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + t + .5);
+      o.connect(g); g.connect(ac.destination); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + .55);
     });
   } catch (e) {}
 }
 function finish() {
-  clearInterval(tick); tick = null; endAt = null; beep();
-  if (mode === "focus") { count++; store(todayKey, String(count)); document.getElementById("n").textContent = count; }
+  clearInterval(tick); tick = null; endAt = null; chime();
+  if (mode === "focus") { count++; store(key, String(count)); showCount(); }
   setMode(mode === "focus" ? "break" : "focus");
-  panel.classList.remove("done"); void panel.offsetWidth; panel.classList.add("done");
+  document.body.classList.remove("done"); void document.body.offsetWidth; document.body.classList.add("done");
 }
 function setMode(m) {
   mode = m; left = LEN[m]; endAt = null; clearInterval(tick); tick = null; go.textContent = "시작";
-  panel.classList.toggle("break", m === "break");
-  document.querySelectorAll("[data-mode]").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
+  document.body.classList.toggle("break", m === "break");
+  document.getElementById("label").textContent = m === "focus" ? "집중" : "휴식";
+  document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
   draw();
 }
 go.onclick = () => {
   if (endAt) { left = remaining(); endAt = null; clearInterval(tick); tick = null; go.textContent = "계속"; draw(); return; }
-  endAt = Date.now() + left * 1000; go.textContent = "일시정지";
-  tick = setInterval(draw, 250); draw();
+  endAt = Date.now() + left * 1000; go.textContent = "멈춤"; tick = setInterval(draw, 250); draw();
 };
 document.getElementById("reset").onclick = () => setMode(mode);
 document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => setMode(b.dataset.mode));
-window.addEventListener("resize", draw);
 draw();
 </script></body></html>
