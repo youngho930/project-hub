@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Briefing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500&display=swap">
+<style>
+:root{--page:#191919;--ink:#ede9f7;--muted:#8f8ba8;--faint:#5f5b78;--line:#2c2a38;--lamp:#f2c66d;--river:#8db4f0;--ok:#7fd1a8}
+html,body{margin:0;height:100%;background:var(--page);color:var(--ink);overflow:hidden;font-family:"IBM Plex Sans KR",system-ui,sans-serif}
+a.wrap{display:block;height:100%;box-sizing:border-box;color:inherit;text-decoration:none;border-radius:10px;transition:background .2s}
+a.wrap:hover{background:#1f1e26}
+a.wrap:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+.title{font-size:15px;font-weight:500;letter-spacing:.01em}
+.src{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(127,209,168,.15)}
+.stale .dot{background:var(--faint);box-shadow:none}
+.lab{font-size:13px;color:var(--muted);white-space:nowrap}
+.num{display:flex;align-items:baseline;gap:4px;white-space:nowrap}
+.num b{font:600 40px/1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.num small{font-size:13px;color:var(--muted)}
+.sub{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.new.hot .num b{color:var(--river)}
+.due.hot .num b{color:var(--lamp)}
+.ico{width:18px;height:18px;flex:none;stroke:var(--muted);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.new.hot .ico{stroke:var(--river)}
+.due.hot .ico{stroke:var(--lamp)}
+
+/* bar: a full-width strip under the widget row */
+body.bar a.wrap{display:grid;grid-template-columns:minmax(150px,.8fr) repeat(3,1fr);align-items:center;padding:0 8px}
+body.bar .head{display:flex;flex-direction:column;gap:8px;padding:0 20px}
+body.bar .item{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ico lab" "num num" "sub sub";align-items:center;column-gap:8px;row-gap:7px;padding:0 24px;border-left:1px solid var(--line);min-width:0}
+body.bar .top,body.bar .txt{display:contents}
+body.bar .ico{grid-area:ico}body.bar .lab{grid-area:lab}body.bar .num{grid-area:num}body.bar .sub{grid-area:sub}
+body.bar .num b{font-size:clamp(30px,3.1vw,44px)}
+
+/* card: a block that sits beside the goal views */
+body.card a.wrap{display:flex;flex-direction:column;padding:14px 16px;border:1px solid var(--line)}
+body.card .head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+body.card .item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:12px;flex:1;border-bottom:1px solid var(--line);min-height:0}
+body.card .item:last-child{border-bottom:0}
+body.card .item .top{display:contents}
+body.card .item .txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+body.card .lab{font-size:14px;color:var(--ink)}
+body.card .num{grid-column:3;grid-row:1}
+body.card .num b{font-size:clamp(28px,8.5vw,36px)}
+</style></head>
+<body>
+<a class="wrap" id="wrap" href="https://project-hub-youngho.vercel.app" target="_blank" rel="noopener" aria-label="Project Hub 열기">
+  <div class="head"><span class="title">오늘 한눈에</span><span class="src" id="srcBox"><i class="dot"></i><span id="src">불러오는 중</span></span></div>
+  <div class="item" id="cal">
+    <div class="top"><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4.5" width="14" height="12.5" rx="2.5"/><path d="M3 8.5h14M7 2.8v3.4M13 2.8v3.4"/></svg><div class="txt"><span class="lab">오늘 일정</span><span class="sub" id="calSub">구글 캘린더</span></div></div>
+    <span class="num"><b id="calN">–</b><small>개</small></span>
+  </div>
+  <div class="item new" id="jobs">
+    <div class="top"><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5l1.7 4.6 4.8.4-3.7 3 1.2 4.8L10 12.6l-4 2.7 1.2-4.8-3.7-3 4.8-.4z"/></svg><div class="txt"><span class="lab">새 공고</span><span class="sub" id="jobsSub">Job Jarvis</span></div></div>
+    <span class="num"><b id="jobsN">–</b><small>건</small></span>
+  </div>
+  <div class="item due" id="due">
+    <div class="top"><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10.5" r="7"/><path d="M10 6.5v4.2l2.8 1.8M8 2h4"/></svg><div class="txt"><span class="lab">마감 임박</span><span class="sub" id="dueSub">3일 안 · 아직 지원 전</span></div></div>
+    <span class="num"><b id="dueN">–</b><small>건</small></span>
+  </div>
+</a>
+<script>
+// Project Hub 의 /api/briefing 이 주는 개수만 보여 준다 (일정 제목·회사명은 받지 않음). 규칙은 lib/briefing.js
+const Q = new URLSearchParams(location.search);
+// 노션에서 칸을 가로로 길게 늘이면 띠, 아니면 카드 (?v=bar|card 로 고정 가능)
+function layout() {
+  const v = Q.get("v") || (innerWidth / Math.max(innerHeight, 1) > 4 ? "bar" : "card");
+  document.body.className = v === "card" ? "card" : "bar";
+}
+layout(); addEventListener("resize", layout);
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, "0");
+// 갱신 시각은 보는 PC 시간대와 상관없이 한국 시각으로
+function kst(iso) {
+  const ms = Date.parse(iso);
+  if (isNaN(ms)) return null;
+  const d = new Date(ms + 9 * 60 * 60 * 1000);
+  return { md: (d.getUTCMonth() + 1) + "/" + d.getUTCDate(), hm: pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) };
+}
+let shown = false;
+function render(d) {
+  const cal = d.calendar || {}, jobs = d.jobs || {};
+  const calOk = cal.today != null, jobsOk = jobs.saved != null;
+  $("calN").textContent = calOk ? cal.today : "–";
+  $("calSub").textContent = calOk ? (cal.week ? "이번 주 " + cal.week + "개 더" : "이번 주 다른 일정 없음") : "캘린더 연결 안 됨";
+  $("jobsN").textContent = !jobsOk || jobs.newToday == null ? "–" : jobs.newToday > 0 ? "+" + jobs.newToday : "0";
+  $("jobs").classList.toggle("hot", jobs.newToday > 0);
+  $("jobsSub").textContent = !jobsOk ? "Job Jarvis 연결 안 됨" : (jobs.collectedToday ? "" : "오늘 수집 전 · ") + "지원 대기 " + jobs.saved + "건";
+  $("dueN").textContent = jobsOk && jobs.dueSoon != null ? jobs.dueSoon : "–";
+  $("due").classList.toggle("hot", jobs.dueSoon > 0);
+  const t = jobsOk && kst(jobs.updatedAt);
+  $("srcBox").classList.toggle("stale", !(calOk && jobsOk && jobs.status === "연결됨"));
+  // PC 가 꺼져 Job Jarvis 가 못 돈 날은 '대기' — 고장이 아니라 회색 점으로만
+  $("src").textContent = !t ? (calOk || jobsOk ? "Project Hub" : "연결 안 됨")
+    : jobs.status === "대기" ? "대기 · " + t.md + " " + t.hm + " 갱신"
+    : jobs.collectedToday ? "Project Hub · " + t.hm + " 갱신"
+    : t.md + " " + t.hm + " 갱신";
+  shown = true;
+}
+async function load() {
+  try {
+    const r = await fetch("/api/briefing", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    render(await r.json());
+  } catch (e) {
+    if (shown) return; // 잠깐 끊겨도 마지막으로 받은 숫자는 그대로 둔다
+    render({}); $("src").textContent = "연결 안 됨";
+  }
+}
+if (window.__BRIEFING_SAMPLE__) render(window.__BRIEFING_SAMPLE__); else { load(); setInterval(load, 10 * 60 * 1000); }
+</script></body></html>
