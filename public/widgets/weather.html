@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pixel Weather</title>
+<style>:root{--panel:#12142b;--edge:#2c2f5c;--edge2:#1b1e3e;--tile:#1f2246;--tile2:#262a55;--text:#ece9ff;--dim:#8c89b8;--yellow:#ffd56b;--lav:#b8a9ff;--cyan:#7fe3ff;--pink:#ff7aa2}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--panel);color:var(--text);font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+.panel{position:absolute;inset:0;background:var(--panel);box-shadow:inset 0 0 0 2px var(--edge),inset 0 0 0 4px var(--edge2);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;gap:10px}
+.label{font-size:12px;letter-spacing:.08em;color:var(--dim)}
+button{font:inherit;font-size:13px;color:var(--text);background:var(--tile);border:0;padding:7px 12px;cursor:pointer;box-shadow:inset 0 0 0 2px #3a3e72,inset -2px -3px 0 2px #15183a;border-radius:0}
+button:hover{background:var(--tile2)}
+button.on{background:var(--lav);color:#15183a;box-shadow:inset 0 0 0 2px #d9d0ff,inset -2px -3px 0 2px #8f80d9}
+button:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+
+.panel{justify-content:space-evenly}
+.now{display:flex;align-items:center;gap:12px}
+.meta{display:flex;flex-direction:column;gap:3px}
+.desc{font-size:14px;font-weight:600;white-space:nowrap}
+.days{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;width:100%;max-width:340px}
+.day{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--dim)}
+.day b{color:var(--text);font-weight:600;font-size:12px}
+.day .hi{color:var(--text);font-variant-numeric:tabular-nums}
+.day .lo{color:var(--dim);font-variant-numeric:tabular-nums}
+.msg{font-size:12px;color:var(--dim);text-align:center;line-height:1.5}
+canvas{display:block}
+</style></head>
+<body><div class="panel">
+  <div class="now"><canvas id="icon" width="48" height="48"></canvas><canvas id="temp" width="0" height="0"></canvas>
+    <div class="meta"><span class="desc" id="desc">불러오는 중</span><span class="label" id="city">SEOUL</span></div></div>
+  <div class="days" id="days"></div>
+  <div class="msg" id="msg" hidden></div>
+</div>
+<script>
+// Shared pixel-font helpers (5x7 bitmap font) for the Notion home widgets.
+const GLYPHS = {
+  "0": ["01110","10001","10011","10101","11001","10001","01110"],
+  "1": ["00100","01100","00100","00100","00100","00100","01110"],
+  "2": ["01110","10001","00001","00010","00100","01000","11111"],
+  "3": ["11110","00001","00001","01110","00001","00001","11110"],
+  "4": ["00010","00110","01010","10010","11111","00010","00010"],
+  "5": ["11111","10000","11110","00001","00001","10001","01110"],
+  "6": ["00110","01000","10000","11110","10001","10001","01110"],
+  "7": ["11111","00001","00010","00100","01000","01000","01000"],
+  "8": ["01110","10001","10001","01110","10001","10001","01110"],
+  "9": ["01110","10001","10001","01111","00001","00010","01100"],
+  "A": ["01110","10001","10001","11111","10001","10001","10001"],
+  "C": ["01110","10001","10000","10000","10000","10001","01110"],
+  "D": ["11110","10001","10001","10001","10001","10001","11110"],
+  "E": ["11111","10000","10000","11110","10000","10000","11111"],
+  "F": ["11111","10000","10000","11110","10000","10000","10000"],
+  "H": ["10001","10001","10001","11111","10001","10001","10001"],
+  "I": ["01110","00100","00100","00100","00100","00100","01110"],
+  "M": ["10001","11011","10101","10101","10001","10001","10001"],
+  "N": ["10001","11001","10101","10011","10001","10001","10001"],
+  "O": ["01110","10001","10001","10001","10001","10001","01110"],
+  "R": ["11110","10001","10001","11110","10100","10010","10001"],
+  "S": ["01111","10000","10000","01110","00001","00001","11110"],
+  "T": ["11111","00100","00100","00100","00100","00100","00100"],
+  "U": ["10001","10001","10001","10001","10001","10001","01110"],
+  "W": ["10001","10001","10001","10101","10101","10101","01010"],
+  ":": ["0","1","0","0","0","1","0"],
+  ".": ["0","0","0","0","0","0","1"],
+  "-": ["000","000","000","111","000","000","000"],
+  "/": ["001","001","010","010","010","100","100"],
+  "|": ["1","1","1","1","1","1","1"],
+  "°": ["010","101","010","000","000","000","000"],
+  " ": ["00","00","00","00","00","00","00"]
+};
+function glyph(ch) { return GLYPHS[ch] || GLYPHS[" "]; }
+function measure(text) {
+  let w = 0;
+  for (const ch of text) w += glyph(ch)[0].length + 1;
+  return Math.max(0, w - 1);
+}
+function drawText(ctx, text, x, y, s, color) {
+  ctx.fillStyle = color;
+  for (const ch of text) {
+    const g = glyph(ch);
+    for (let r = 0; r < 7; r++)
+      for (let c = 0; c < g[r].length; c++)
+        if (g[r][c] === "1") ctx.fillRect(x + c * s, y + r * s, s, s);
+    x += (g[0].length + 1) * s;
+  }
+}
+function fitCanvas(canvas, el) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(1, el.clientWidth), h = Math.max(1, el.clientHeight);
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  canvas.style.width = w + "px"; canvas.style.height = h + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  return { ctx, w, h };
+}
+function store(key, val) {
+  try {
+    if (val === undefined) return window.localStorage.getItem(key);
+    window.localStorage.setItem(key, val);
+  } catch (e) { return null; }
+}
+
+const Q = new URLSearchParams(location.search);
+const LAT = Number(Q.get("lat")) || 37.5665, LON = Number(Q.get("lon")) || 126.978;
+const KDAY = ["일","월","화","수","목","금","토"];
+const COL = { Y:"#ffd56b", O:"#ffb347", W:"#ece9ff", G:"#8c89b8", D:"#5d5a8a", B:"#7fe3ff", M:"#f6ecc6" };
+function kind(code) {
+  if (code === 0) return "clear";
+  if (code <= 2) return "partly";
+  if (code === 3) return "cloud";
+  if (code === 45 || code === 48) return "fog";
+  if (code >= 95) return "storm";
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "snow";
+  if (code >= 51) return "rain";
+  return "cloud";
+}
+const LABEL = { clear:"맑음", partly:"구름 조금", cloud:"흐림", fog:"안개", rain:"비", snow:"눈", storm:"뇌우" };
+function iconGrid(k, day) {
+  const g = Array.from({ length: 12 }, () => Array(12).fill(null));
+  const put = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && x < 12 && y >= 0 && y < 12) g[y][x] = c; };
+  const disc = (cx, cy, r, c) => { for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) if (Math.hypot(x - cx, y - cy) <= r) g[y][x] = c; };
+  const sun = (cx, cy, r, ray) => {
+    disc(cx, cy, r, "Y");
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; put(cx + Math.cos(a) * ray, cy + Math.sin(a) * ray, "O"); }
+  };
+  const moon = (cx, cy, r) => {
+    for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++)
+      if (Math.hypot(x - cx, y - cy) <= r && Math.hypot(x - cx - 2, y - cy + 1.5) > r - 0.6) g[y][x] = "M";
+  };
+  const cloud = (dy, c, shade) => {
+    disc(3.5, 7 + dy, 2.4, c); disc(6.5, 5.8 + dy, 3, c); disc(9, 7.3 + dy, 2.1, c);
+    for (let x = 1; x < 11; x++) { const y = Math.round(9 + dy); if (y < 12 && g[y][x]) g[y][x] = shade; }
+  };
+  if (k === "clear") { if (day) sun(5.5, 5.5, 2.6, 4.6); else moon(5.5, 5.5, 4); }
+  else if (k === "partly") { if (day) sun(3.5, 3.5, 2, 3.6); else moon(4, 4, 3); cloud(1, "W", "G"); }
+  else if (k === "cloud") { cloud(-1.5, "G", "D"); cloud(0.5, "W", "G"); }
+  else if (k === "fog") { for (const [y, a, b] of [[3,1,9],[5,3,11],[7,0,8],[9,2,10]]) for (let x = a; x < b; x++) put(x, y, y % 4 === 1 ? "G" : "W"); }
+  else {
+    cloud(-2, k === "storm" ? "G" : "W", "D");
+    if (k === "rain") for (const [x, y] of [[3,9],[6,10],[9,9],[4,11]]) put(x, y, "B");
+    if (k === "snow") for (const [x, y] of [[3,9],[6,10],[9,9],[5,11],[8,11]]) put(x, y, "W");
+    if (k === "storm") for (const [x, y] of [[6,7],[5,8],[6,8],[5,9],[6,9],[4,10],[5,10],[4,11]]) put(x, y, "Y");
+  }
+  return g;
+}
+function drawIcon(canvas, k, day, px) {
+  canvas.width = 12 * px; canvas.height = 12 * px;
+  const ctx = canvas.getContext("2d"); ctx.imageSmoothingEnabled = false;
+  iconGrid(k, day).forEach((row, y) => row.forEach((c, x) => { if (c) { ctx.fillStyle = COL[c]; ctx.fillRect(x * px, y * px, px, px); } }));
+}
+function drawTemp(t) {
+  const canvas = document.getElementById("temp");
+  const text = Math.round(t) + "°C", s = 5;
+  canvas.width = measure(text) * s; canvas.height = 7 * s;
+  const ctx = canvas.getContext("2d");
+  drawText(ctx, text, 0, 0, s, "#ece9ff");
+}
+function render(d) {
+  const day = d.current.is_day === 1, k = kind(d.current.weather_code);
+  drawIcon(document.getElementById("icon"), k, day, 4);
+  drawTemp(d.current.temperature_2m);
+  document.getElementById("desc").textContent = LABEL[k];
+  const days = document.getElementById("days"); days.innerHTML = "";
+  d.daily.time.slice(0, 5).forEach((iso, i) => {
+    const el = document.createElement("div"); el.className = "day";
+    const name = i === 0 ? "오늘" : KDAY[new Date(iso + "T00:00:00").getDay()];
+    const c = document.createElement("canvas");
+    drawIcon(c, kind(d.daily.weather_code[i]), true, 2);
+    el.innerHTML = "<b>" + name + "</b>";
+    el.appendChild(c);
+    el.insertAdjacentHTML("beforeend", '<span class="hi">' + Math.round(d.daily.temperature_2m_max[i]) + '°</span><span class="lo">' + Math.round(d.daily.temperature_2m_min[i]) + "°</span>");
+    days.appendChild(el);
+  });
+  document.getElementById("msg").hidden = true;
+}
+if (Q.get("name")) document.getElementById("city").textContent = Q.get("name");
+function fail() {
+  if (document.getElementById("days").children.length) return; // keep the last good forecast
+  drawIcon(document.getElementById("icon"), "cloud", true, 4);
+  const t = document.getElementById("temp"); t.width = 0; t.height = 0;
+  document.getElementById("desc").textContent = "연결 안 됨";
+  const m = document.getElementById("msg"); m.hidden = false;
+  m.textContent = "날씨 정보를 불러오지 못했어요. 잠시 뒤 새로고침해 보세요.";
+}
+async function load() {
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
+    "&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=5";
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(r.status);
+    render(await r.json());
+  } catch (e) { fail(); }
+}
+if (window.__WEATHER_SAMPLE__) render(window.__WEATHER_SAMPLE__); else load();
+setInterval(load, 30 * 60 * 1000);
+</script></body></html>

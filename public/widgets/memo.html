@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Memo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
+<style>
+html,body{margin:0;height:100%;background:#191919;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center}
+.paper{--lh:13vw;position:relative;width:84vw;height:58vw;transform:rotate(2deg);
+  background:linear-gradient(90deg,transparent 9.5vw,#e89696 9.5vw,#e89696 calc(9.5vw + 2px),transparent calc(9.5vw + 2px)),
+  repeating-linear-gradient(180deg,transparent 0,transparent calc(var(--lh) - 2px),#b2c4e6 calc(var(--lh) - 2px),#b2c4e6 var(--lh)) 0 4vw/100% var(--lh),#f8f4e9;
+  box-shadow:1.5vw 2vw 3vw rgba(0,0,0,.5)}
+.tape{position:absolute;top:-2.2vw;left:50%;width:26vw;height:6vw;margin-left:-13vw;background:rgba(255,213,107,.6);transform:rotate(-3deg)}
+.moon{position:absolute;top:4vw;right:5vw;width:7vw;height:7vw}
+.text{position:absolute;left:14vw;right:3vw;top:calc(4vw + var(--lh));font-family:"Nanum Pen Script",cursive;color:#28283a;white-space:nowrap}
+.text div{height:var(--lh);display:flex;align-items:flex-end;font-size:9.6vw;line-height:1;padding-bottom:1vw;box-sizing:border-box}
+</style></head>
+<body><div class="paper">
+  <div class="tape"></div>
+  <svg class="moon" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path fill="#ffd56b" d="M2 0h4v1H2zM1 1h4v1H1zM0 2h4v3H0zM0 5h5v1H0zM1 6h6v1H1zM2 7h4v1H2z"/></svg>
+  <div class="text"><div>걱정하지 마.</div><div>잘하고 있어.</div></div>
+</div>
+<script>
+const t = new URLSearchParams(location.search).get("t");
+if (t) {
+  const box = document.querySelector(".text"); box.textContent = "";
+  t.split("|").slice(0, 3).forEach(line => { const d = document.createElement("div"); d.textContent = line; box.appendChild(d); });
+}
+</script></body></html>

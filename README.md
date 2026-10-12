@@ -113,6 +113,7 @@ lib/                 데이터 읽기·계산 (프로젝트·완성도, 그래�
 data/projects/       프로젝트 정보 (JSON, 프로젝트 하나에 파일 하나)
 data/profile.json    첫 화면 소개 문구와 대표 숫자
 public/previews/     프로젝트 화면 캡처와 manifest.json
+public/widgets/      노션 대시보드에 붙이는 픽셀 위젯 (시계·날씨·메모·집중 타이머, 외부 라이브러리 없는 단일 HTML)
 assets/fonts/        공유 이미지용 Pretendard 부분 글꼴과 라이선스
 scripts/             미리보기 캡처 스크립트
 tests/               자동 테스트 (첫 방문 인트로 설정: 저장 규칙, 쓰기 범위, head 스크립트)

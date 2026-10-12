@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pixel Clock</title>
+<style>:root{--panel:#12142b;--edge:#2c2f5c;--edge2:#1b1e3e;--tile:#1f2246;--tile2:#262a55;--text:#ece9ff;--dim:#8c89b8;--yellow:#ffd56b;--lav:#b8a9ff;--cyan:#7fe3ff;--pink:#ff7aa2}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--panel);color:var(--text);font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+.panel{position:absolute;inset:0;background:var(--panel);box-shadow:inset 0 0 0 2px var(--edge),inset 0 0 0 4px var(--edge2);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;gap:10px}
+.label{font-size:12px;letter-spacing:.08em;color:var(--dim)}
+button{font:inherit;font-size:13px;color:var(--text);background:var(--tile);border:0;padding:7px 12px;cursor:pointer;box-shadow:inset 0 0 0 2px #3a3e72,inset -2px -3px 0 2px #15183a;border-radius:0}
+button:hover{background:var(--tile2)}
+button.on{background:var(--lav);color:#15183a;box-shadow:inset 0 0 0 2px #d9d0ff,inset -2px -3px 0 2px #8f80d9}
+button:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+
+#box{position:absolute;inset:0}
+canvas{display:block}
+</style></head>
+<body><div class="panel" id="box"><canvas id="c" aria-label="현재 시각"></canvas></div>
+<script>
+// Shared pixel-font helpers (5x7 bitmap font) for the Notion home widgets.
+const GLYPHS = {
+  "0": ["01110","10001","10011","10101","11001","10001","01110"],
+  "1": ["00100","01100","00100","00100","00100","00100","01110"],
+  "2": ["01110","10001","00001","00010","00100","01000","11111"],
+  "3": ["11110","00001","00001","01110","00001","00001","11110"],
+  "4": ["00010","00110","01010","10010","11111","00010","00010"],
+  "5": ["11111","10000","11110","00001","00001","10001","01110"],
+  "6": ["00110","01000","10000","11110","10001","10001","01110"],
+  "7": ["11111","00001","00010","00100","01000","01000","01000"],
+  "8": ["01110","10001","10001","01110","10001","10001","01110"],
+  "9": ["01110","10001","10001","01111","00001","00010","01100"],
+  "A": ["01110","10001","10001","11111","10001","10001","10001"],
+  "C": ["01110","10001","10000","10000","10000","10001","01110"],
+  "D": ["11110","10001","10001","10001","10001","10001","11110"],
+  "E": ["11111","10000","10000","11110","10000","10000","11111"],
+  "F": ["11111","10000","10000","11110","10000","10000","10000"],
+  "H": ["10001","10001","10001","11111","10001","10001","10001"],
+  "I": ["01110","00100","00100","00100","00100","00100","01110"],
+  "M": ["10001","11011","10101","10101","10001","10001","10001"],
+  "N": ["10001","11001","10101","10011","10001","10001","10001"],
+  "O": ["01110","10001","10001","10001","10001","10001","01110"],
+  "R": ["11110","10001","10001","11110","10100","10010","10001"],
+  "S": ["01111","10000","10000","01110","00001","00001","11110"],
+  "T": ["11111","00100","00100","00100","00100","00100","00100"],
+  "U": ["10001","10001","10001","10001","10001","10001","01110"],
+  "W": ["10001","10001","10001","10101","10101","10101","01010"],
+  ":": ["0","1","0","0","0","1","0"],
+  ".": ["0","0","0","0","0","0","1"],
+  "-": ["000","000","000","111","000","000","000"],
+  "/": ["001","001","010","010","010","100","100"],
+  "|": ["1","1","1","1","1","1","1"],
+  "°": ["010","101","010","000","000","000","000"],
+  " ": ["00","00","00","00","00","00","00"]
+};
+function glyph(ch) { return GLYPHS[ch] || GLYPHS[" "]; }
+function measure(text) {
+  let w = 0;
+  for (const ch of text) w += glyph(ch)[0].length + 1;
+  return Math.max(0, w - 1);
+}
+function drawText(ctx, text, x, y, s, color) {
+  ctx.fillStyle = color;
+  for (const ch of text) {
+    const g = glyph(ch);
+    for (let r = 0; r < 7; r++)
+      for (let c = 0; c < g[r].length; c++)
+        if (g[r][c] === "1") ctx.fillRect(x + c * s, y + r * s, s, s);
+    x += (g[0].length + 1) * s;
+  }
+}
+function fitCanvas(canvas, el) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(1, el.clientWidth), h = Math.max(1, el.clientHeight);
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  canvas.style.width = w + "px"; canvas.style.height = h + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  return { ctx, w, h };
+}
+function store(key, val) {
+  try {
+    if (val === undefined) return window.localStorage.getItem(key);
+    window.localStorage.setItem(key, val);
+  } catch (e) { return null; }
+}
+
+const DAYS = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+const box = document.getElementById("box"), canvas = document.getElementById("c");
+const pad2 = n => String(n).padStart(2, "0");
+function draw() {
+  const { ctx, w, h } = fitCanvas(canvas, box);
+  const now = new Date();
+  const parts = [pad2(now.getHours()), pad2(now.getMinutes()), pad2(now.getSeconds())];
+  const date = DAYS[now.getDay()] + " | " + now.getFullYear() + "." + pad2(now.getMonth() + 1) + "." + pad2(now.getDate());
+  const showSec = w >= 230;
+  const tiles = showSec ? 3 : 2;
+  const unitsW = tiles * 15 + (tiles - 1) * 5;
+  let s = Math.floor(Math.min((w - 28) / unitsW, (h - 28) / 17));
+  s = Math.max(1, s);
+  let ds = Math.max(1, Math.round(s * 0.42));
+  const blockH = 11 * s + 4 * ds + 7 * ds;
+  let x = Math.round((w - unitsW * s) / 2), y = Math.round((h - blockH) / 2);
+  ctx.clearRect(0, 0, w, h);
+  for (let i = 0; i < tiles; i++) {
+    const tx = x, tw = 15 * s, th = 11 * s;
+    ctx.fillStyle = "#262a55"; ctx.fillRect(tx, y, tw, th / 2);
+    ctx.fillStyle = "#1f2246"; ctx.fillRect(tx, y + th / 2, tw, th / 2);
+    ctx.fillStyle = "#0b0d20"; ctx.fillRect(tx, y + Math.floor(th / 2), tw, Math.max(1, Math.round(s / 3)));
+    ctx.fillStyle = "#12142b";
+    ctx.fillRect(tx, y + th / 2 - s, s, 2 * s); ctx.fillRect(tx + tw - s, y + th / 2 - s, s, 2 * s);
+    drawText(ctx, parts[i], tx + 2 * s, y + 2 * s, s, "#f3eeff");
+    x += tw;
+    if (i < tiles - 1) {
+      const on = now.getMilliseconds() < 500 || !showSec;
+      drawText(ctx, ":", x + 2 * s, y + 2 * s, s, on ? "#b8a9ff" : "#3a3e72");
+      x += 5 * s;
+    }
+  }
+  const dw = measure(date) * ds;
+  drawText(ctx, date, Math.round((w - dw) / 2), y + 11 * s + 4 * ds, ds, "#b8a9ff");
+}
+draw();
+setInterval(draw, 250);
+window.addEventListener("resize", draw);
+</script></body></html>
